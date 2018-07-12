@@ -1,20 +1,34 @@
 import uuid
+import importlib
 from functools import partial, wraps
 from pymemcache.client.base import Client
-
 from sanic_auth import Auth
 from authomatic import Authomatic
+
+from .singleton import Singleton
 from .config import settings
 from .errors import Unauthenticated, Unauthorized
 
 
-class CustomAuth(Auth):
-    __session_client__ = None
+def get_user_model_class():
+    if settings.USER_MODEL is None:
+        raise AttributeError("USER_MODEL is not configured, please see documentation for ERROR_AUTH_USER_MODEL")
+    (path, model_class) = settings.USER_MODEL.split(".")
+    module = importlib.import_module(path)
+    if hasattr(module, model_class):
+        return getattr(module, model_class)
+    else:
+        raise AttributeError("The configured user model `{}` can not be imported, please see documentation for"
+                             " ERROR_AUTH_USER_MODEL".format(settings.USER_MODEL))
+
+
+class CustomAuth(Auth, metaclass=Singleton):
+    __session_client = None
 
     def session_store(self):
-        if not self.__session_client__:
-            self.__session_client__ = Client((settings.MEMCACHE_HOST, 11211))
-        return self.__session_client__
+        if not self.__session_client:
+            self.__session_client = Client((settings.MEMCACHE_HOST, 11211))
+        return self.__session_client
 
     def set_auth_token(self, request, auth_token=None):
         auth_header = request.headers.get("authorization", None)
@@ -36,8 +50,8 @@ class CustomAuth(Auth):
         return user.id
 
     def load_user(self, token):
-        from apps.account.models import User
-        return User.query.filter(User.id == token).first()
+        user_model = get_user_model_class()
+        return user_model.query().filter(user_model.id == token).first()
 
     def current_user(self, request):
         if "authorization" in request.headers:
@@ -51,6 +65,9 @@ class CustomAuth(Auth):
         data = self.session_store().get(self.auth_session_key)
         self.session_store().delete(self.auth_session_key)
         return data
+
+
+auth = CustomAuth()
 
 
 authomatic_config = {
