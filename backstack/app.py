@@ -51,7 +51,7 @@ def get_session_middleware():
     return session_middleware
 
 
-def json_exception(_, exception):
+def json_exception(request, exception):
     errors = {}
     status_code = 400
 
@@ -85,7 +85,10 @@ class CustomRequest(Request):
         return self.user is not None
 
 
-def create_app():
+def create_app(override_settings=None):
+    if override_settings:
+        # If override_settings is present, then it is a callable which will override the default settings
+        override_settings(settings)
     app = MainApp(__name__, request_class=CustomRequest)
     app.config.SECRET_KEY = settings.SECRET_KEY
     auth.setup(app=app)
