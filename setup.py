@@ -28,5 +28,7 @@ setup(
         "psycopg2_binary",
         "python-decouple",
         "sqlalchemy",
+        "marshmallow",
+        "passlib"
     ]
 )
