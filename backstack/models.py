@@ -5,7 +5,7 @@ from sqlalchemy.ext.declarative import declared_attr
 from sqlalchemy.dialects.postgresql import INET
 
 from .db import db, Base
-from .errors import UniqueConstraintError
+from .errors import UniqueConstraintError, RequiredColumnError
 
 
 class Serializer(object):
@@ -59,6 +59,9 @@ class SystemModel(Base):
                 db.session.flush()
         except IntegrityError as err:
             db.session.rollback()
+            if (err.orig and err.orig.diag and err.orig.diag.message_primary and
+                    "null value in column" in err.orig.diag.message_primary):
+                raise RequiredColumnError(err.orig.diag.message_primary)
             raise UniqueConstraintError(err.orig.diag.message_detail)
 
 
