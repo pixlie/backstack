@@ -53,16 +53,16 @@ class DB(metaclass=Singleton):
             self.__scoped_session.remove()
 
     def test_mode(self):
-        self.__test_mode = True
+        settings.RUNNING_AS = constants.TEST_MODE
         self.__engine = None
 
     def production_mode(self):
-        self.__test_mode = False
+        settings.RUNNING_AS = constants.PRODUCTION_MODE
         self.__engine = None
 
     @property
     def is_test_mode(self):
-        return self.__test_mode
+        return settings.RUNNING_AS == constants.TEST_MODE
 
 
 db = DB()

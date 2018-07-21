@@ -20,6 +20,8 @@ class Errors(Enum):
     UNAUTHENTICATED = "UNAUTHENTICATED"
     UNAUTHORIZED = "UNAUTHORIZED"
 
+    DUPLICATE_UNIQUE_VALUE = "DUPLICATE_UNIQUE_VALUE"
+
 
 class ModelError(Exception):
     field = None
@@ -31,6 +33,10 @@ class ModelError(Exception):
 
 
 class UniqueConstraintError(Exception):
+    """
+    Used when there is a database level exception that a column needs to have Unique entries but the data passed
+    for this column already exists.
+    """
     field = None
 
     def __init__(self, message):
@@ -39,6 +45,21 @@ class UniqueConstraintError(Exception):
     def get_error(self):
         error = dict()
         error[self.field] = Errors.DUPLICATE_UNIQUE_VALUE.value
+        return error
+
+
+class RequiredColumnError(Exception):
+    """
+    Used when there is a database level exception that a column not nullable but no data is passed for it.
+    """
+    field = None
+
+    def __init__(self, message):
+        self.field = message.split("\"")[1]
+
+    def get_error(self):
+        error = dict()
+        error[self.field] = Errors.REQUIRED_FIELD.value
         return error
 
 
