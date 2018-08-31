@@ -17,7 +17,7 @@ class MainApp(Sanic, metaclass=Singleton):
                 urls = importlib.import_module("apps.%s.urls" % app)
                 if hasattr(urls, "setup_routes"):
                     urls.setup_routes(self)
-            except ImportError:
+            except (ImportError, ModuleNotFoundError):
                 pass
 
     def add_route(self, *args, **kwargs):
@@ -32,7 +32,7 @@ class MainApp(Sanic, metaclass=Singleton):
         for app in settings.APPS:
             try:
                 models.append(importlib.import_module("apps.%s.models" % app))
-            except ImportError:
+            except (ImportError, ModuleNotFoundError):
                 pass
         return models
 
