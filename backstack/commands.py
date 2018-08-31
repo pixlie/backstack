@@ -53,7 +53,7 @@ class Commands(object):
             import pika
         except ImportError:
             raise Exception("You have to install pika to run workers, see documentation for ERROR_WORKERS_PIKA")
-        connection = pika.BlockingConnection(pika.ConnectionParameters(host='localhost'))
+        connection = pika.BlockingConnection(pika.ConnectionParameters(host="localhost"))
         channel = connection.channel()
 
         channel.exchange_declare(

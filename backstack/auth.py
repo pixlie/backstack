@@ -13,7 +13,9 @@ from .errors import Unauthenticated, Unauthorized
 def get_user_model_class():
     if settings.USER_MODEL is None:
         raise AttributeError("USER_MODEL is not configured, please see documentation for ERROR_AUTH_USER_MODEL")
-    (path, model_class) = settings.USER_MODEL.split(".")
+    last_dot_pos = settings.USER_MODEL.rfind(".")
+    path = settings.USER_MODEL[:last_dot_pos]
+    model_class = settings.USER_MODEL[last_dot_pos+1:]
     module = importlib.import_module(path)
     if hasattr(module, model_class):
         return getattr(module, model_class)
@@ -27,7 +29,7 @@ class CustomAuth(Auth, metaclass=Singleton):
 
     def session_store(self):
         if not self.__session_client:
-            self.__session_client = Client((settings.MEMCACHE_HOST, 11211))
+            self.__session_client = Client((settings.MEMCACHED_HOST, 11211))
         return self.__session_client
 
     def set_auth_token(self, request, auth_token=None):

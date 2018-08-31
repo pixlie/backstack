@@ -85,11 +85,11 @@ class CustomRequest(Request):
         return self.user is not None
 
 
-def create_app(override_settings=None):
+def create_app(override_settings=None, app_class=MainApp):
     if override_settings:
         # If override_settings is present, then it is a callable which will override the default settings
         override_settings(settings)
-    app = MainApp(__name__, request_class=CustomRequest)
+    app = app_class(__name__, request_class=CustomRequest)
     app.config.SECRET_KEY = settings.SECRET_KEY
     auth.setup(app=app)
     app.register_middleware(get_session_middleware(), attach_to="request")
