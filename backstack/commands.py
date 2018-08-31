@@ -44,7 +44,7 @@ class Commands(object):
                         for data in gen["data"]:
                             model_data = model(**data)
                             model_data.save()
-            except ModuleNotFoundError:
+            except ImportError:
                 pass
 
     @staticmethod
