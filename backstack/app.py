@@ -30,10 +30,7 @@ class MainApp(Sanic, metaclass=Singleton):
     def load_models():
         models = []
         for app in settings.APPS:
-            try:
-                models.append(importlib.import_module("apps.%s.models" % app))
-            except ImportError:
-                pass
+            models.append(importlib.import_module("apps.%s.models" % app))
         return models
 
 
