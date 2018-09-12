@@ -13,7 +13,7 @@ class Settings(metaclass=Singleton):
 
         # Statement for enabling development environment.
         # Keep PRODUCTION = True for production environment
-        self.RUNNING_AS = config("RUNNING_AS", cast=str, default=constants.DEBUG_MODE)
+        self.RUNNING_AS = config("RUNNING_AS", cast=str, default=constants.RUNNING_DEVELOPMENT)
 
         # Python path to the User model class (SQLAlchemy model)
         # This is not read from settings.ini, instead set this in your main.py like
@@ -43,7 +43,8 @@ class Settings(metaclass=Singleton):
 
         self.SECRET_KEY = config("SECRET_KEY", cast=str)
 
-        self.RABBITMQ_HOST = config("RABBITMQ_HOST", cast=str, default="amqp://guest:guest@localhost:5672")
+        self.RABBITMQ_HOST = config("RABBITMQ_HOST", cast=str, default="localhost")
+        self.RABBITMQ_PORT = config("RABBITMQ_PORT", cast=int, default=5672)
         self.RABBITMQ_EXCHANGE = config("RABBITMQ_EXCHANGE", cast=str, default="mq-exchange")
 
         self.FACEBOOK_CONSUMER_KEY = config("FACEBOOK_CONSUMER_KEY", cast=str, default="")

@@ -53,14 +53,40 @@ class Commands(object):
             import pika
         except ImportError:
             raise Exception("You have to install pika to run workers, see documentation for ERROR_WORKERS_PIKA")
-        connection = pika.BlockingConnection(pika.ConnectionParameters(host="localhost"))
+        connection = pika.BlockingConnection(pika.ConnectionParameters(
+            host=settings.RABBITMQ_HOST,
+            port=settings.RABBITMQ_PORT
+        ))
         channel = connection.channel()
 
         channel.exchange_declare(
-            exchange=settings.MQ_EXCHANGE,
+            exchange=settings.RABBITMQ_EXCHANGE,
             exchange_type="topic"
         )
-        channel.queue_declare(exclusive=True)
+        result = channel.queue_declare(exclusive=True)
+        queue_name = result.method.queue
+
+        # Search for workers.setup_workers in all apps
+        for app in settings.APPS:
+            try:
+                fixtures = importlib.import_module("apps.%s.workers" % app)
+                if hasattr(fixtures, "setup_workers"):
+                    workers = fixtures.setup_workers()
+                    for binding in workers:
+                        for key in binding[1]:
+                            channel.queue_bind(
+                                exchange=settings.RABBITMQ_EXCHANGE,
+                                queue=queue_name,
+                                routing_key=key
+                            )
+                        channel.basic_consume(
+                            binding[0],
+                            queue=queue_name,
+                            no_ack=True
+                        )
+            except ImportError:
+                pass
+        channel.start_consuming()
 
     def execute(self):
         parser = argparse.ArgumentParser(description="default backend")
