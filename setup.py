@@ -29,6 +29,7 @@ setup(
         "python-decouple",
         "sqlalchemy",
         "marshmallow",
-        "passlib"
+        "passlib",
+        "pika"
     ]
 )
