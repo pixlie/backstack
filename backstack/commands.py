@@ -93,20 +93,23 @@ class Commands(object):
         self.__app.go_fast(**settings.DAEMON)
 
     @staticmethod
-    def shell(self):
+    def shell():
         import code
         code.interact(local=locals())
+
+    def get_commands(self):
+        return self.commands
 
     def execute(self):
         parser = argparse.ArgumentParser(description="default backend")
         parser.add_argument(
             "action",
             action="store",
-            choices=self.commands
+            choices=self.get_commands()
         )
 
         args = parser.parse_args()
         self.__args = args
 
-        if args.action in self.commands and hasattr(self, args.action):
+        if args.action in self.get_commands() and hasattr(self, args.action):
             getattr(self, args.action)()
