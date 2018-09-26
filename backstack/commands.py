@@ -8,6 +8,7 @@ from .config import settings
 class Commands(object):
     __app = None
     __args = None
+    commands = ["server", "drop_tables", "create_tables", "load_fixtures", "run_workers", "shell"]
 
     def __init__(self, app=None):
         if app is None:
@@ -48,7 +49,7 @@ class Commands(object):
                 pass
 
     @staticmethod
-    def workers():
+    def run_workers():
         try:
             import pika
         except ImportError:
@@ -88,27 +89,24 @@ class Commands(object):
                 pass
         channel.start_consuming()
 
+    def server(self):
+        self.__app.go_fast(**settings.DAEMON)
+
+    @staticmethod
+    def shell(self):
+        import code
+        code.interact(local=locals())
+
     def execute(self):
         parser = argparse.ArgumentParser(description="default backend")
         parser.add_argument(
             "action",
             action="store",
-            choices=["server", "drop_tables", "create_tables", "load_fixtures", "run_workers", "shell"]
+            choices=self.commands
         )
 
         args = parser.parse_args()
         self.__args = args
 
-        if args.action == "server":
-            self.__app.go_fast(**settings.DAEMON)
-        elif args.action == "drop_tables":
-            self.drop_tables()
-        elif args.action == "create_tables":
-            self.create_tables()
-        elif args.action == "load_fixtures":
-            self.load_fixtures()
-        elif args.action == "run_workers":
-            self.workers()
-        elif args.action == "shell":
-            import code
-            code.interact(local=locals())
+        if args.action in self.commands and hasattr(self, args.action):
+            getattr(self, args.action)()
