@@ -1,10 +1,28 @@
+import ujson as json
 from sqlalchemy import Column, DateTime, Integer, ForeignKey, text
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.declarative import declared_attr
 from sqlalchemy.dialects.postgresql import INET
 
 from .db import db, Base
-from .errors import UniqueConstraintError
+from .errors import UniqueConstraintError, RequiredColumnError
+
+
+class Serializer(object):
+    __table__ = None
+
+    def dump_json(self):
+        json.dumps({c.name: getattr(self, c.name) for c in self.__table__.columns})
+
+
+class Deserializer(object):
+    __table__ = None
+
+    def load_json(self, data):
+        column_keys = self.__table__.columns.keys()
+        for k, v in data.items():
+            if k in column_keys:
+                setattr(self, k, v)
 
 
 class SystemModel(Base):
@@ -41,6 +59,9 @@ class SystemModel(Base):
                 db.session.flush()
         except IntegrityError as err:
             db.session.rollback()
+            if (err.orig and err.orig.diag and err.orig.diag.message_primary and
+                    "null value in column" in err.orig.diag.message_primary):
+                raise RequiredColumnError(err.orig.diag.message_primary)
             raise UniqueConstraintError(err.orig.diag.message_detail)
 
 

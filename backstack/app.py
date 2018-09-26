@@ -17,7 +17,7 @@ class MainApp(Sanic, metaclass=Singleton):
                 urls = importlib.import_module("apps.%s.urls" % app)
                 if hasattr(urls, "setup_routes"):
                     urls.setup_routes(self)
-            except ModuleNotFoundError:
+            except ImportError:
                 pass
 
     def add_route(self, *args, **kwargs):
@@ -30,10 +30,7 @@ class MainApp(Sanic, metaclass=Singleton):
     def load_models():
         models = []
         for app in settings.APPS:
-            try:
-                models.append(importlib.import_module("apps.%s.models" % app))
-            except ModuleNotFoundError:
-                pass
+            models.append(importlib.import_module("apps.%s.models" % app))
         return models
 
 
@@ -51,7 +48,7 @@ def get_session_middleware():
     return session_middleware
 
 
-def json_exception(_, exception):
+def json_exception(request, exception):
     errors = {}
     status_code = 400
 
@@ -85,11 +82,14 @@ class CustomRequest(Request):
         return self.user is not None
 
 
-def create_app():
-    app = MainApp(__name__, request_class=CustomRequest)
+def create_app(override_settings=None, app_class=MainApp, session_middleware=get_session_middleware):
+    if override_settings:
+        # If override_settings is present, then it is a callable which will override the default settings
+        override_settings(settings)
+    app = app_class(__name__, request_class=CustomRequest)
     app.config.SECRET_KEY = settings.SECRET_KEY
     auth.setup(app=app)
-    app.register_middleware(get_session_middleware(), attach_to="request")
+    app.register_middleware(session_middleware(), attach_to="request")
     app.setup_routes()
 
     app.error_handler.add(SanicException, json_exception)

@@ -23,7 +23,7 @@ class DB(metaclass=Singleton):
     @property
     def engine(self):
         if self.__engine is None:
-            if settings.RUNNING_AS == constants.TEST_MODE:
+            if settings.RUNNING_AS == constants.RUNNING_TEST:
                 self.__engine = create_engine(
                     settings.DB_TEST,
                     convert_unicode=True
@@ -53,16 +53,16 @@ class DB(metaclass=Singleton):
             self.__scoped_session.remove()
 
     def test_mode(self):
-        self.__test_mode = True
+        settings.RUNNING_AS = constants.RUNNING_TEST
         self.__engine = None
 
     def production_mode(self):
-        self.__test_mode = False
+        settings.RUNNING_AS = constants.RUNNING_PRODUCTION
         self.__engine = None
 
     @property
     def is_test_mode(self):
-        return self.__test_mode
+        return settings.RUNNING_AS == constants.RUNNING_TEST
 
 
 db = DB()

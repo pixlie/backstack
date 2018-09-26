@@ -199,7 +199,7 @@ class CreateMixin(ModelMixin):
     def handle_post(self, *args, **kwargs):
         schema = self.get_serializer()
         try:
-            schema_instance = schema.load(self.request.json)
+            schema_instance = schema.load(self.request.json or {})
         except ValidationError as err:
             raise ServerError(err.messages, status_code=400)
 
@@ -309,7 +309,7 @@ class UpdateMixin(QueryFilter, ModelMixin):
         schema = self.get_serializer(instance=existing)
 
         try:
-            schema_instance = schema.load(self.request.json)
+            schema_instance = schema.load(self.request.json or {})
         except ValidationError as err:
             raise ServerError(message=err.messages, status_code=400)
 
