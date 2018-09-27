@@ -5,7 +5,7 @@ from sqlalchemy.ext.declarative import declared_attr
 from sqlalchemy.dialects.postgresql import INET
 
 from .db import db, Base
-from .errors import UniqueConstraintError, RequiredColumnError
+from .errors import Errors, UniqueConstraintError, RequiredColumnError, ModelError
 
 
 class Serializer(object):
@@ -60,8 +60,14 @@ class SystemModel(Base):
         except IntegrityError as err:
             db.session.rollback()
             if (err.orig and err.orig.diag and err.orig.diag.message_primary and
-                    "null value in column" in err.orig.diag.message_primary):
+                "null value in column" in err.orig.diag.message_primary):
                 raise RequiredColumnError(err.orig.diag.message_primary)
+            elif (err.orig and err.orig.diag and err.orig.diag.message_detail and
+                "is not present in table" in err.orig.diag.message_detail):
+                # 'Key (<column_name>)=(<value>) is not present in table "<related_column>".'
+                column_name = err.orig.diag.message_detail.split("=")[0]
+                column_name = column_name[column_name.find("(") + 1:-1]
+                raise ModelError(field=column_name, message=Errors.INVALID_INPUT.value)
             raise UniqueConstraintError(err.orig.diag.message_detail)
 
 
