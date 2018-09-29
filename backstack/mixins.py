@@ -1,6 +1,6 @@
 from sanic import response
 from sqlalchemy import or_
-from sqlalchemy.exc import IntegrityError
+from sqlalchemy.exc import IntegrityError, StatementError
 from sqlalchemy.orm.exc import NoResultFound
 from marshmallow.exceptions import ValidationError
 
@@ -195,6 +195,10 @@ class CreateMixin(ModelMixin):
                     },
                 },
             })
+        except StatementError:
+            # TODO: Handle SQL type errors (e.g. passing string 'false' for a boolean field)
+            db.session.rollback()
+            raise ServerError()
 
     def handle_post(self, *args, **kwargs):
         schema = self.get_serializer()
@@ -276,6 +280,11 @@ class UpdateMixin(QueryFilter, ModelMixin):
         except AssertionError:
             db.session.rollback()
             raise ServerError()
+        except StatementError:
+            # TODO: Handle SQL type errors (e.g. passing string 'false' for a boolean field)
+            db.session.rollback()
+            raise ServerError()
+
         try:
             instance.save(commit=False)
             db.session.commit()
