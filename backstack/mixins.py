@@ -287,6 +287,10 @@ class UpdateMixin(QueryFilter, ModelMixin):
 
         try:
             instance.save(commit=False)
+            if hasattr(self, "pre_update_commit"):
+                db.session.flush()
+                self.pre_update_commit(instance=instance)
+
             db.session.commit()
             if hasattr(self, "post_update"):
                 self.post_update()
