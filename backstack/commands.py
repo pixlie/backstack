@@ -70,9 +70,9 @@ class Commands(object):
         # Search for workers.setup_workers in all apps
         for app in settings.APPS:
             try:
-                fixtures = importlib.import_module("apps.%s.workers" % app)
-                if hasattr(fixtures, "setup_workers"):
-                    workers = fixtures.setup_workers()
+                workers = importlib.import_module("apps.%s.workers" % app)
+                if hasattr(workers, "setup_workers"):
+                    workers = workers.setup_workers()
                     for binding in workers:
                         for key in binding[1]:
                             channel.queue_bind(
