@@ -58,6 +58,7 @@ class Settings(metaclass=Singleton):
         self.APPS = ()
 
         self.FILE_UPLOAD_PATH = config("FILE_UPLOAD_PATH", cast=str, default="/tmp/")
+        self.S3_BUCKET = config("S3_BUCKET", cast=str)
 
 
 settings = Settings()
