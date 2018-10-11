@@ -18,7 +18,7 @@ class Settings(metaclass=Singleton):
         # Python path to the User model class (SQLAlchemy model)
         # This is not read from settings.ini, instead set this in your main.py like
         #  `settings.USER_MODEL = "apps.account.models.User"`
-        self.USER_MODEL = None
+        self.USER_MODEL = config("USER_MODEL", cast=str)
 
         # Datebase configurations
         self.DB_DEFAULT = config("DB_DEFAULT", cast=str)
@@ -56,6 +56,8 @@ class Settings(metaclass=Singleton):
         self.MEMCACHED_HOST = config("MEMCACHED_HOST", cast=str, default="localhost")
 
         self.APPS = ()
+
+        self.FILE_UPLOAD_PATH = config("FILE_UPLOAD_PATH", cast=str, default="/tmp/")
 
 
 settings = Settings()
