@@ -39,9 +39,7 @@ def session_middlewares(app):
     session_store = MemcacheSession()
 
     def request_middleware(request):
-        auth.set_auth_token(request)
-        session_store.set_session_key(auth.auth_session_key)
-        auth.set_session_store(session_store)
+        session_store.set_session_key(request=request)
         request.session = session_store
         user = auth.current_user(request)
         if user:

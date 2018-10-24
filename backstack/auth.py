@@ -1,7 +1,5 @@
-import uuid
 import importlib
 from functools import partial, wraps
-from pymemcache.client.base import Client
 from sanic_auth import Auth
 from authomatic import Authomatic
 
@@ -25,22 +23,7 @@ def get_user_model_class():
 
 
 class CustomAuth(Auth, metaclass=Singleton):
-    __session_store__ = None
-
-    def set_session_store(self, session_store):
-        self.__session_store__ = session_store
-
-    def set_auth_token(self, request, auth_token=None):
-        auth_header = request.headers.get("authorization", None)
-        if auth_header:
-            _, auth_token = auth_header.split(" ")
-        if auth_token is None:
-            auth_token = uuid.uuid4().hex
-        self.auth_session_key = auth_token
-
-    def login_user(self, request, user, auth_token=None):
-        if auth_token:
-            self.set_auth_token(request, auth_token)
+    def login_user(self, request, user):
         request.session["user"] = self.serialize(user)
         return self.auth_session_key
 
