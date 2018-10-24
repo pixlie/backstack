@@ -52,35 +52,6 @@ class CustomAuth(Auth, metaclass=Singleton):
 auth = CustomAuth()
 
 
-authomatic_config = {
-    "facebook": {  # Provider name.
-        "class_": "authomatic.providers.oauth2.Facebook",  # Provider class. Don"t miss the trailing underscore!
-
-        # Provider type specific keyword arguments:
-        "short_name": 1,  # Unique value used for serialization of credentials only needed by OAuth 2.0 and OAuth 1.0a.
-        "consumer_key": settings.FACEBOOK_CONSUMER_KEY,  # Key assigned to consumer by the provider.
-        "consumer_secret": settings.FACEBOOK_CONSUMER_SECRET,  # Secret assigned to consumer by the provider.
-        "scope": [
-            # "user_about_me",  # List of requested permissions only needed by OAuth 2.0.
-            "email"
-        ]
-    },
-
-    "google": {
-        "class_": "authomatic.providers.oauth2.Google",  # Can be a fully qualified string path.
-
-        # Provider type specific keyword arguments:
-        "short_name": 2,  # use authomatic.short_name() to generate this automatically
-        "consumer_key": settings.GOOGLE_CONSUMER_KEY,
-        "consumer_secret": settings.GOOGLE_CONSUMER_SECRET,
-        "scope": [
-            "https://www.googleapis.com/auth/userinfo.profile",
-            "https://www.googleapis.com/auth/userinfo.email"
-        ]
-    }
-}
-
-
 def get_authomatic():
     return Authomatic(authomatic_config, settings.SECRET_KEY)
 
