@@ -54,15 +54,16 @@ class CustomAuth(Auth, metaclass=Singleton):
     def current_user(self, request):
         if "authorization" in request.headers:
             _, token = request.headers["authorization"].split(" ")
-            user_id = request.session["user"]
+            try:
+                user_id = request.session["user"]
+            except KeyError:
+                return None
             if user_id is not None:
                 return self.load_user(int(user_id))
         return None
 
     def logout_user(self, request):
-        data = self.session_store().get(self.auth_session_key)
         del request.session["user"]
-        return data
 
 
 auth = CustomAuth()

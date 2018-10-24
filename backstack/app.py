@@ -88,6 +88,7 @@ class CustomRequest(Request):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.user = None
+        self.session = None
 
     @property
     def is_authenticated(self):
