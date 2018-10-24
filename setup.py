@@ -1,13 +1,11 @@
 from setuptools import setup
 
-
 with open("README.md", "r") as fh:
     long_description = fh.read()
 
-
 setup(
     name="backstack",
-    version="0.0.0",
+    version="0.0.1",
     author="Sumit Datta",
     author_email="brainless@pixlie.com",
     description="An opinionated RESTful backend framework",
@@ -30,6 +28,7 @@ setup(
         "sqlalchemy",
         "marshmallow",
         "passlib",
-        "pika"
+        "pika",
+        "ujson"
     ]
 )
