@@ -1,35 +1,6 @@
 from authomatic.adapters import BaseAdapter
 from sanic.response import HTTPResponse
-from pymemcache.client.base import Client
 from .config import settings
-
-
-class AuthomaticSession(object):
-    """
-    This class creates a dict like Session object that uses memcached to store the session
-    data for Authomatic social login/registration.
-    """
-    __session_client__ = None
-
-    def session_store(self):
-        if not self.__session_client__:
-            self.__session_client__ = Client(('localhost', 11211))
-        return self.__session_client__
-
-    def save(self):
-        pass
-
-    def get(self, key, default=None):
-        return self.session_store().get("social-%s" % key, default=default).decode()
-
-    def __setitem__(self, key, value):
-        self.session_store().set("social-%s" % key, value)
-
-    def __getitem__(self, key):
-        return self.session_store().get("social-%s" % key)
-
-    def __delitem__(self, key):
-        return self.session_store().delete("social-%s" % key)
 
 
 class CustomAdapter(BaseAdapter):
