@@ -60,5 +60,7 @@ class Settings(metaclass=Singleton):
         self.FILE_UPLOAD_PATH = config("FILE_UPLOAD_PATH", cast=str, default="/tmp/")
         self.S3_BUCKET = config("S3_BUCKET", cast=str)
 
+        self.SESSION_COOKIE_NAME = config("SESSION_COOKIE_NAME", cast=str)
+
 
 settings = Settings()
