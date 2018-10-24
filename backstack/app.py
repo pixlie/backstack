@@ -8,6 +8,7 @@ from .singleton import Singleton
 from .auth import auth
 from .config import settings
 from .errors import ModelError
+from .session import MemcacheSession
 
 
 class MainApp(Sanic, metaclass=Singleton):
@@ -34,18 +35,28 @@ class MainApp(Sanic, metaclass=Singleton):
         return models
 
 
-def get_session_middleware():
-    session_store = {}
+def session_middlewares(app):
+    session_store = MemcacheSession()
 
-    def session_middleware(request):
-        request["session"] = session_store
+    def request_middleware(request):
         auth.set_auth_token(request)
+        session_store.set_session_key(auth.auth_session_key)
+        auth.set_session_store(session_store)
+        request.session = session_store
         user = auth.current_user(request)
         if user:
             request.user = user
         else:
             request.user = None
-    return session_middleware
+
+    def response_middleware(_, response):
+        if session_store.is_dirty:
+            response.cookies[settings.SESSION_COOKIE_NAME] = auth.auth_session_key
+            response.cookies[settings.SESSION_COOKIE_NAME]["max-age"] = 3600*24*60
+        return response
+
+    app.register_middleware(request_middleware, attach_to="request")
+    app.register_middleware(response_middleware, attach_to="response")
 
 
 def json_exception(request, exception):
@@ -82,14 +93,15 @@ class CustomRequest(Request):
         return self.user is not None
 
 
-def create_app(override_settings=None, app_class=MainApp, session_middleware=get_session_middleware):
+def create_app(override_settings=None, app_class=MainApp, middlewares=(session_middlewares,)):
     if override_settings:
         # If override_settings is present, then it is a callable which will override the default settings
         override_settings(settings)
     app = app_class(__name__, request_class=CustomRequest)
     app.config.SECRET_KEY = settings.SECRET_KEY
     auth.setup(app=app)
-    app.register_middleware(session_middleware(), attach_to="request")
+    for middleware in middlewares:
+        middleware(app)
     app.setup_routes()
 
     app.error_handler.add(SanicException, json_exception)

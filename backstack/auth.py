@@ -25,12 +25,10 @@ def get_user_model_class():
 
 
 class CustomAuth(Auth, metaclass=Singleton):
-    __session_client = None
+    __session_store__ = None
 
-    def session_store(self):
-        if not self.__session_client:
-            self.__session_client = Client((settings.MEMCACHED_HOST, 11211))
-        return self.__session_client
+    def set_session_store(self, session_store):
+        self.__session_store__ = session_store
 
     def set_auth_token(self, request, auth_token=None):
         auth_header = request.headers.get("authorization", None)
@@ -43,9 +41,7 @@ class CustomAuth(Auth, metaclass=Singleton):
     def login_user(self, request, user, auth_token=None):
         if auth_token:
             self.set_auth_token(request, auth_token)
-            self.session_store().set(self.auth_session_key, self.serialize(user))
-        else:
-            self.session_store().set(self.auth_session_key, self.serialize(user))
+        request.session["user"] = self.serialize(user)
         return self.auth_session_key
 
     def serialize(self, user):
@@ -58,14 +54,14 @@ class CustomAuth(Auth, metaclass=Singleton):
     def current_user(self, request):
         if "authorization" in request.headers:
             _, token = request.headers["authorization"].split(" ")
-            user_id = self.session_store().get(token)
+            user_id = request.session["user"]
             if user_id is not None:
                 return self.load_user(int(user_id))
         return None
 
     def logout_user(self, request):
         data = self.session_store().get(self.auth_session_key)
-        self.session_store().delete(self.auth_session_key)
+        del request.session["user"]
         return data
 
 
@@ -102,8 +98,7 @@ authomatic_config = {
 
 
 def get_authomatic():
-    from .authomatic_adaptor import AuthomaticSession
-    return Authomatic(authomatic_config, settings.SECRET_KEY, session=AuthomaticSession)
+    return Authomatic(authomatic_config, settings.SECRET_KEY)
 
 
 def login_required(func):
