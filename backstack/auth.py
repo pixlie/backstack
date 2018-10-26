@@ -1,7 +1,6 @@
 import importlib
 from functools import partial, wraps
 from sanic_auth import Auth
-from authomatic import Authomatic
 
 from .singleton import Singleton
 from .config import settings
@@ -25,7 +24,6 @@ def get_user_model_class():
 class CustomAuth(Auth, metaclass=Singleton):
     def login_user(self, request, user):
         request.session["user"] = self.serialize(user)
-        return self.auth_session_key
 
     def serialize(self, user):
         return user.id
@@ -50,10 +48,6 @@ class CustomAuth(Auth, metaclass=Singleton):
 
 
 auth = CustomAuth()
-
-
-def get_authomatic():
-    return Authomatic(authomatic_config, settings.SECRET_KEY)
 
 
 def login_required(func):

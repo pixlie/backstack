@@ -40,6 +40,9 @@ class MemcacheSession(object, metaclass=Singleton):
             self.__session_key__ = uuid.uuid4().hex
         self.load()
 
+    def get_session_key(self):
+        return self.__session_key__
+
     def session_store(self):
         if not self.__session_client__:
             self.__session_client__ = Client((settings.MEMCACHED_HOST, 11211))

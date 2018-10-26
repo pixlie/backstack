@@ -50,7 +50,7 @@ def session_middlewares(app):
     def response_middleware(_, response):
         if session_store.is_dirty:
             session_store.save()
-            response.cookies[settings.SESSION_COOKIE_NAME] = auth.auth_session_key
+            response.cookies[settings.SESSION_COOKIE_NAME] = session_store.get_session_key()
             response.cookies[settings.SESSION_COOKIE_NAME]["max-age"] = 3600*24*60
         return response
 
