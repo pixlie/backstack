@@ -160,7 +160,7 @@ class CreateMixin(ModelMixin):
 
     def create_instance(self):
         instance = self.instance
-        if(hasattr(instance, "created_from") and self.request.ip):
+        if hasattr(instance, "created_from") and self.request.ip:
             instance.created_from = self.request.ip
         if (self.save_creator and
                 hasattr(instance, "created_by_id") and
