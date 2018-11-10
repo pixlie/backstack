@@ -79,10 +79,11 @@ class ModelMixin(object):
         return True if len(fks) else False
 
     def get_serializer(self, instance=None):
+        partial = True if self.request.method == "PATCH" else False
         if instance:
-            return self.serializer_class(instance=instance)
+            return self.serializer_class(partial=partial, instance=instance)
         else:
-            return self.serializer_class()
+            return self.serializer_class(partial=partial)
 
 
 class ListMixin(QueryFilter, ModelMixin):
@@ -337,3 +338,6 @@ class UpdateMixin(QueryFilter, ModelMixin):
             schema.dump(self.instance).data,
             status=200
         )
+
+    def handle_patch(self, *args, **kwargs):
+        return self.handle_put(*args, **kwargs)
