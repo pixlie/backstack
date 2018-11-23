@@ -1,6 +1,6 @@
 from sanic import response
 from sqlalchemy import or_
-from sqlalchemy.exc import IntegrityError, StatementError
+from sqlalchemy.exc import IntegrityError, StatementError, DataError
 from sqlalchemy.orm.exc import NoResultFound
 from marshmallow.exceptions import ValidationError
 
@@ -196,6 +196,10 @@ class CreateMixin(ModelMixin):
                     },
                 },
             })
+        except DataError:
+            db.session.rollback()
+            # TODO: Usually this is a length mismatch error, handle this
+            raise ServerError()
         except StatementError:
             # TODO: Handle SQL type errors (e.g. passing string 'false' for a boolean field)
             db.session.rollback()
@@ -307,7 +311,11 @@ class UpdateMixin(QueryFilter, ModelMixin):
                     },
                 },
             })
-        except IntegrityError as i:
+        except DataError:
+            db.session.rollback()
+            # TODO: Usually this is a length mismatch error, handle this
+            raise ServerError()
+        except IntegrityError:
             raise ServerError()
         except NoResultFound:
             raise NotFound()
