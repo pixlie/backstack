@@ -64,8 +64,6 @@ class Commands(object):
             exchange=settings.RABBITMQ_EXCHANGE,
             exchange_type="topic"
         )
-        result = channel.queue_declare(exclusive=True)
-        queue_name = result.method.queue
 
         # Search for workers.setup_workers in all apps
         for app in settings.APPS:
@@ -74,6 +72,8 @@ class Commands(object):
                 if hasattr(workers, "setup_workers"):
                     workers = workers.setup_workers()
                     for binding in workers:
+                        result = channel.queue_declare(exclusive=True)
+                        queue_name = result.method.queue
                         for key in binding[1]:
                             channel.queue_bind(
                                 exchange=settings.RABBITMQ_EXCHANGE,

@@ -83,4 +83,4 @@ class BaseModel(SystemModel):
 
     @declared_attr
     def created_by_id(self):
-        return Column(Integer, ForeignKey("user.id", name="created_by_fk"), nullable=False)
+        return Column(Integer, ForeignKey("users.id", name="created_by_fk"), nullable=False)

@@ -40,6 +40,15 @@ class BaseController(HTTPMethodView):
         else:
             raise NotFound()
 
+    def patch(self, request, *args, **kwargs):
+        if not self.__request_initiated:
+            self.init_request(request, *args, **kwargs)
+
+        if hasattr(self, "handle_patch"):
+            return self.handle_patch(*args, **kwargs)
+        else:
+            raise NotFound()
+
     def delete(self, request, *args, **kwargs):
         if not self.__request_initiated:
             self.init_request(request, *args, **kwargs)

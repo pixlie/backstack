@@ -5,7 +5,7 @@ with open("README.md", "r") as fh:
 
 setup(
     name="backstack",
-    version="0.0.1",
+    version="0.0.2",
     author="Sumit Datta",
     author_email="brainless@pixlie.com",
     description="An opinionated RESTful backend framework",

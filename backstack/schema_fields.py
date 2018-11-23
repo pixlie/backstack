@@ -34,7 +34,7 @@ class Decimal(Defaults, fields.Decimal):
     __classname__ = "decimal"
 
     def __init__(self, *args, **kwargs):
-        super(fields.Decimal, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         self.default_error_messages["special"] = "Special numeric values are not permitted."
 
 
@@ -42,7 +42,7 @@ class Boolean(Defaults, fields.Boolean):
     __classname__ = "boolean"
 
     def __init__(self, *args, **kwargs):
-        super(fields.Boolean, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         self.default_error_messages["invalid"] = "Not a valid boolean."
 
 
@@ -50,7 +50,7 @@ class FormattedString(Defaults, fields.FormattedString):
     __classname__ = "string"
 
     def __init__(self, *args, **kwargs):
-        super(fields.FormattedString, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         self.default_error_messages["format"] = "Cannot format string with given data."
 
 
@@ -66,7 +66,7 @@ class Time(Defaults, fields.TimeDelta):
     __classname__ = "time"
 
     def __init__(self, *args, **kwargs):
-        super(fields.TimeDelta, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         self.default_error_messages["format"] = "{input!r} cannot be formatted as timedelta"
 
 
@@ -85,6 +85,10 @@ class Nested(Defaults, fields.Nested):
 class Enum(Defaults, fields.Field):
     __classname__ = "enum"
 
+    def __init__(self, enum, *args, **kwargs):
+        self.enum = enum
+        super().__init__(*args, **kwargs)
+
     def _serialize(self, value, attr, obj):
         try:
             return value.name
@@ -93,9 +97,8 @@ class Enum(Defaults, fields.Field):
 
     def _deserialize(self, value, attr, data):
         try:
-            enum_type = self.metadata["enum_type"]
-            return enum_type[value]
-        except Exception:
+            return self.enum[value]
+        except KeyError:
             raise ValidationError(Errors.INVALID_INPUT.value)
 
 

@@ -1,6 +1,6 @@
 from sanic import response
 from sqlalchemy import or_
-from sqlalchemy.exc import IntegrityError, StatementError
+from sqlalchemy.exc import IntegrityError, StatementError, DataError
 from sqlalchemy.orm.exc import NoResultFound
 from marshmallow.exceptions import ValidationError
 
@@ -79,10 +79,11 @@ class ModelMixin(object):
         return True if len(fks) else False
 
     def get_serializer(self, instance=None):
+        partial = True if self.request.method == "PATCH" else False
         if instance:
-            return self.serializer_class(instance=instance)
+            return self.serializer_class(partial=partial, instance=instance)
         else:
-            return self.serializer_class()
+            return self.serializer_class(partial=partial)
 
 
 class ListMixin(QueryFilter, ModelMixin):
@@ -160,7 +161,7 @@ class CreateMixin(ModelMixin):
 
     def create_instance(self):
         instance = self.instance
-        if(hasattr(instance, "created_from") and self.request.ip):
+        if hasattr(instance, "created_from") and self.request.ip:
             instance.created_from = self.request.ip
         if (self.save_creator and
                 hasattr(instance, "created_by_id") and
@@ -195,6 +196,10 @@ class CreateMixin(ModelMixin):
                     },
                 },
             })
+        except DataError:
+            db.session.rollback()
+            # TODO: Usually this is a length mismatch error, handle this
+            raise ServerError()
         except StatementError:
             # TODO: Handle SQL type errors (e.g. passing string 'false' for a boolean field)
             db.session.rollback()
@@ -306,7 +311,11 @@ class UpdateMixin(QueryFilter, ModelMixin):
                     },
                 },
             })
-        except IntegrityError as i:
+        except DataError:
+            db.session.rollback()
+            # TODO: Usually this is a length mismatch error, handle this
+            raise ServerError()
+        except IntegrityError:
             raise ServerError()
         except NoResultFound:
             raise NotFound()
@@ -337,3 +346,6 @@ class UpdateMixin(QueryFilter, ModelMixin):
             schema.dump(self.instance).data,
             status=200
         )
+
+    def handle_patch(self, *args, **kwargs):
+        return self.handle_put(*args, **kwargs)
