@@ -196,7 +196,7 @@ class CreateMixin(ModelMixin):
                     },
                 },
             })
-        except DataError:
+        except DataError as e:
             db.session.rollback()
             # TODO: Usually this is a length mismatch error, handle this
             raise ServerError()

@@ -91,14 +91,14 @@ class Enum(Defaults, fields.Field):
 
     def _serialize(self, value, attr, obj):
         try:
-            return value.name
-        except Exception:
+            return value.value
+        except ValueError:
             raise ValidationError(Errors.INVALID_INPUT.value)
 
     def _deserialize(self, value, attr, data):
         try:
-            return self.enum[value]
-        except KeyError:
+            return self.enum(value)
+        except ValueError:
             raise ValidationError(Errors.INVALID_INPUT.value)
 
 
