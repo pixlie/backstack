@@ -68,7 +68,7 @@ class SystemModel(Base):
                 column_name = err.orig.diag.message_detail.split("=")[0]
                 column_name = column_name[column_name.find("(") + 1:-1]
                 raise ModelError(field=column_name, message=Errors.INVALID_INPUT.value)
-            raise UniqueConstraintError(err.orig.diag.message_detail)
+            raise UniqueConstraintError(err.orig.diag.message_detail, err.orig.diag.message_primary)
 
 
 class BaseModel(SystemModel):
