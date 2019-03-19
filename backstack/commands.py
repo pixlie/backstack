@@ -49,6 +49,21 @@ class Commands(object):
                 pass
 
     @staticmethod
+    def load_fakes():
+        for app in settings.APPS:
+            try:
+                fakes = importlib.import_module("apps.%s.fakes" % app)
+                if hasattr(fakes, "generate"):
+                    gen = fakes.generate()
+                    if isinstance(gen, dict):
+                        model = gen["model"]
+                        for data in gen["data"]:
+                            model_data = model(**data)
+                            model_data.save()
+            except ImportError:
+                pass
+
+    @staticmethod
     def run_workers():
         try:
             import pika
