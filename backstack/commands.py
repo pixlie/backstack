@@ -8,7 +8,7 @@ from .config import settings
 class Commands(object):
     __app = None
     __args = None
-    commands = ["server", "drop_tables", "create_tables", "load_fixtures", "run_workers", "shell"]
+    commands = ["server", "drop_tables", "create_tables", "load_fixtures", "load_fakes", "run_workers", "shell"]
 
     def __init__(self, app=None):
         if app is None:
