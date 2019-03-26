@@ -54,14 +54,9 @@ class Commands(object):
             try:
                 fakes = importlib.import_module("apps.%s.fakes" % app)
                 if hasattr(fakes, "generate"):
-                    gen = fakes.generate()
-                    if isinstance(gen, dict):
-                        model = gen["model"]
-                        for data in gen["data"]:
-                            model_data = model(**data)
-                            model_data.save()
-            except ImportError:
-                pass
+                    fakes.generate()
+            except ImportError as e:
+                print(e)
 
     @staticmethod
     def run_workers():
