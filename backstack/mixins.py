@@ -22,42 +22,53 @@ class QueryFilter(object):
     url_parts = {}
     filter_by_creator = False
     allowed_filters = []
+    query_params = {}
 
     def get_default_filters(self, *args, **kwargs):
         return []
 
     def get_url_parts_filters(self):
         """
-        Get a list of SQLAlchemy model filters that we need to apply to get
-        the item that we need. The filter values will most probably come
-        from URL parts.
+        This method creates a list of SQLAlchemy Model filters that we apply to the queryset (to get an item or list).
+        The filter-able fields are specified in the self.url_parts dict().
+        Each entry in self.url_parts should specify the field name as in the URL part and then the corresponding Model
+            field that we want to query.
         """
         filters = []
-        m = self.get_model()
-        ua = self.url_parts
+        url_parts = self.url_parts
         for k, v in self.kwargs.items():
-            if k in ua:
-                if type(ua[k]) is list:
-                    for item in ua[k]:
+            if k in url_parts:
+                if type(url_parts[k]) is list:
+                    for item in url_parts[k]:
                         filters.append(item == self.kwargs[k])
                 else:
-                    filters.append(ua[k] == self.kwargs[k])
-        for k,v in self.request.args.items():
-            if k in ua:
-                if type(ua[k]) is list:
-                    new_filters = []
-                    for item in ua[k]:
-                        new_filters.append(item.in_(self.request.args[k]))
-                    filters.append(or_(*new_filters))
-                else:
-                    filters.append(ua[k].in_(self.request.args[k]))
+                    filters.append(url_parts[k] == self.kwargs[k])
+        return filters
 
-        if self.filter_by_creator and hasattr(m, "created_by_id"):
-            filters.append(getattr(m, "created_by_id") == self.request.user.id)
+    def get_query_params_filters(self):
+        """
+        This method creates a list of SQLAlchemy Model filters that we apply to the queryset (to get an item or list).
+        The filter-able fields are specified in the self.query_params dict().
+        Each entry in self.query_params should specify the field name as in the URL part and then the corresponding Model
+            field that we want to query.
+        """
+        filters = []
+        query_params = self.query_params
+        for k,v in self.request.args.items():
+            if k in query_params:
+                if type(query_params[k]) is list:
+                    filters.append(item.in_(self.request.args[k]))
+                else:
+                    filters.append(query_params[k].in_(self.request.args[k]))
         return filters
 
     def get_all_filters(self, *args, **kwargs):
-        return self.get_default_filters() + self.get_url_parts_filters()
+        model = self.get_model()
+        filters = self.get_default_filters() + self.get_url_parts_filters() + self.get_query_params_filters()
+
+        if self.filter_by_creator and hasattr(model, "created_by_id"):
+            filters.append(getattr(model, "created_by_id") == self.request.user.id)
+        return filters
 
 
 class ModelMixin(object):
@@ -98,7 +109,11 @@ class ListMixin(QueryFilter, ModelMixin):
             return self.get_model().query()
 
     def get_list(self):
-        return self.get_queryset().all()
+        try:
+            return self.get_queryset().all()
+        except DataError:
+            db.session.rollback()
+            return []
 
     def handle_get(self, *args, **kwargs):
         return response.json(
@@ -349,3 +364,9 @@ class UpdateMixin(QueryFilter, ModelMixin):
 
     def handle_patch(self, *args, **kwargs):
         return self.handle_put(*args, **kwargs)
+
+
+
+
+
+
