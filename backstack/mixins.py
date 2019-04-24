@@ -79,10 +79,13 @@ class ModelMixin(object):
         return self.model
 
     def get_queryset(self):
-        return self.get_model().query().filter(*self.get_all_filters())
-
-    def get_item(self):
-        return self.get_queryset().one()
+        if hasattr(self, "get_all_filters"):
+            query = self.get_model().query().filter(*self.get_all_filters())
+        else:
+            query = self.get_model().query()
+        if hasattr(self, "get_ordering"):
+            query = query.order_by(*self.get_ordering())
+        return query
 
     def has_related(self):
         m = self.get_model()
@@ -97,16 +100,17 @@ class ModelMixin(object):
             return self.serializer_class(partial=partial)
 
 
-class ListMixin(QueryFilter, ModelMixin):
+class OrderMixin(object):
+    def get_ordering(self):
+        return [
+            self.model.id.asc()
+        ]
+
+
+class ListMixin(QueryFilter, ModelMixin, OrderMixin):
     """
     This mixin is used to get a list of items for a given model.
     """
-
-    def get_queryset(self):
-        if hasattr(self, "get_all_filters"):
-            return self.get_model().query().filter(*self.get_all_filters())
-        else:
-            return self.get_model().query()
 
     def get_list(self):
         try:
@@ -121,12 +125,15 @@ class ListMixin(QueryFilter, ModelMixin):
         )
 
 
-class ViewMixin(QueryFilter, ModelMixin):
+class ViewMixin(QueryFilter, ModelMixin, OrderMixin):
     """
     This mixin is used to get a single item for a given model.
 
     When we are reading an item for any model, we require some filters.
     """
+
+    def get_item(self):
+        return self.get_queryset().one()
 
     def handle_get(self, *args, **kwargs):
         try:
