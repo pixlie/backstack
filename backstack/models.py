@@ -37,7 +37,10 @@ class SystemModel(Base):
 
     def __init__(self, *args, **kwargs):
         for obj in kwargs.items():
-            setattr(self, obj[0], obj[1])
+            try:
+                setattr(self, obj[0], obj[1])
+            except AttributeError as e:
+                raise
 
     @classmethod
     def query(cls, *args, **kwargs):
