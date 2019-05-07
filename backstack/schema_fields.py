@@ -108,3 +108,7 @@ class Method(Defaults, fields.Method):
 
 class Function(Defaults, fields.Function):
     __classname__ = "function"
+
+
+class Dict(Defaults, fields.Dict):
+    __classname__ = "dict"
