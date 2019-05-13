@@ -1,6 +1,6 @@
 from sanic import response
 from sqlalchemy import or_
-from sqlalchemy.exc import IntegrityError, StatementError, DataError
+from sqlalchemy.exc import IntegrityError, StatementError, DataError, ProgrammingError
 from sqlalchemy.orm.exc import NoResultFound
 from marshmallow.exceptions import ValidationError
 
@@ -114,8 +114,12 @@ class ListMixin(QueryFilter, ModelMixin, OrderMixin):
 
     def get_list(self):
         try:
-            return self.get_queryset().all()
+            return self.get_queryset()[int(self.kwargs.get("page_offset", 0)):int(self.kwargs.get("page_limit", 100))]
         except DataError:
+            db.session.rollback()
+            return []
+        except ProgrammingError as e:
+            print(e)
             db.session.rollback()
             return []
 
