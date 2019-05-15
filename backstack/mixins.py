@@ -114,7 +114,15 @@ class ListMixin(QueryFilter, ModelMixin, OrderMixin):
 
     def get_list(self):
         try:
-            return self.get_queryset()[int(self.kwargs.get("page_offset", 0)):int(self.kwargs.get("page_limit", 100))]
+            slice_start = (
+                (int(self.request.args.get("page_number", 1)) - 1) *
+                int(self.request.args.get("page_size", 100)) + 1
+            )
+            slice_end = (
+                int(self.request.args.get("page_number", 1)) *
+                int(self.request.args.get("page_size", 100))
+            )
+            return self.get_queryset()[slice_start:slice_end]
         except DataError:
             db.session.rollback()
             return []
