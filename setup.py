@@ -29,6 +29,7 @@ setup(
         "marshmallow",
         "passlib",
         "pika",
-        "ujson"
+        "ujson",
+        "faker",
     ]
 )
