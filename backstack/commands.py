@@ -55,8 +55,8 @@ class Commands(object):
                 fakes = importlib.import_module("apps.%s.fakes" % app)
                 if hasattr(fakes, "generate"):
                     fakes.generate()
-            except ImportError as e:
-                print(e)
+            except ImportError:
+                pass
 
     @staticmethod
     def run_workers():

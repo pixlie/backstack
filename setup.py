@@ -23,7 +23,7 @@ setup(
         "sanic-auth",
         "authomatic",
         "pymemcache",
-        "psycopg2_binary",
+        "psycopg2-binary",
         "python-decouple",
         "sqlalchemy",
         "marshmallow",
