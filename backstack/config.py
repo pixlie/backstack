@@ -63,5 +63,7 @@ class Settings(metaclass=Singleton):
 
         self.SESSION_COOKIE_NAME = config("SESSION_COOKIE_NAME", cast=str)
 
+        self.ALLOWED_ORIGINS = config("ALLOWED_ORIGINS", cast=lambda v: [s.strip() for s in v.split(',')], default=[])
+
 
 settings = Settings()
