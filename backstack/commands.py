@@ -8,7 +8,7 @@ from .config import settings
 class Commands(object):
     __app = None
     __args = None
-    commands = ["server", "drop_tables", "create_tables", "load_fixtures", "run_workers", "shell"]
+    commands = ["server", "drop_tables", "create_tables", "load_fixtures", "load_fakes", "run_workers", "shell"]
 
     def __init__(self, app=None):
         if app is None:
@@ -45,6 +45,16 @@ class Commands(object):
                         for data in gen["data"]:
                             model_data = model(**data)
                             model_data.save()
+            except ImportError:
+                pass
+
+    @staticmethod
+    def load_fakes():
+        for app in settings.APPS:
+            try:
+                fakes = importlib.import_module("apps.%s.fakes" % app)
+                if hasattr(fakes, "generate"):
+                    fakes.generate()
             except ImportError:
                 pass
 

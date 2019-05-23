@@ -13,6 +13,15 @@ class BaseController(HTTPMethodView):
         self.kwargs = kwargs
         self.__request_initiated = True
 
+    def options(self, request, *args, **kwargs):
+        if not self.__request_initiated:
+            self.init_request(request, *args, **kwargs)
+
+        if hasattr(self, "handle_options"):
+            return self.handle_options(*args, **kwargs)
+        else:
+            raise NotFound()
+
     def get(self, request, *args, **kwargs):
         if not self.__request_initiated:
             self.init_request(request, *args, **kwargs)

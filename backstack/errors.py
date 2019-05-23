@@ -39,8 +39,12 @@ class UniqueConstraintError(Exception):
     """
     field = None
 
-    def __init__(self, message):
-        self.field = re.search(r"\([\w\-_]+\)", message.split("=")[0])[0][1:-1]
+    def __init__(self, message_detail, message_primary=None):
+        try:
+            self.field = re.search(r"\([\w\-_]+\)", message_detail.split("=")[0])[0][1:-1]
+        except TypeError:
+            # This constraint seems to be a multiple column unique constraint
+            self.field = message_primary[message_primary.find('"')+1:-1]
 
     def get_error(self):
         error = dict()

@@ -1,11 +1,12 @@
 from sanic import response
 from sqlalchemy import or_
-from sqlalchemy.exc import IntegrityError, StatementError, DataError
+from sqlalchemy.exc import IntegrityError, StatementError, DataError, ProgrammingError
 from sqlalchemy.orm.exc import NoResultFound
 from marshmallow.exceptions import ValidationError
 
 from .db import db
 from .errors import NotFound, ServerError, Errors
+from .config import settings
 
 
 class QueryFilter(object):
@@ -22,42 +23,53 @@ class QueryFilter(object):
     url_parts = {}
     filter_by_creator = False
     allowed_filters = []
+    query_params = {}
 
     def get_default_filters(self, *args, **kwargs):
         return []
 
     def get_url_parts_filters(self):
         """
-        Get a list of SQLAlchemy model filters that we need to apply to get
-        the item that we need. The filter values will most probably come
-        from URL parts.
+        This method creates a list of SQLAlchemy Model filters that we apply to the queryset (to get an item or list).
+        The filter-able fields are specified in the self.url_parts dict().
+        Each entry in self.url_parts should specify the field name as in the URL part and then the corresponding Model
+            field that we want to query.
         """
         filters = []
-        m = self.get_model()
-        ua = self.url_parts
+        url_parts = self.url_parts
         for k, v in self.kwargs.items():
-            if k in ua:
-                if type(ua[k]) is list:
-                    for item in ua[k]:
+            if k in url_parts:
+                if type(url_parts[k]) is list:
+                    for item in url_parts[k]:
                         filters.append(item == self.kwargs[k])
                 else:
-                    filters.append(ua[k] == self.kwargs[k])
-        for k,v in self.request.args.items():
-            if k in ua:
-                if type(ua[k]) is list:
-                    new_filters = []
-                    for item in ua[k]:
-                        new_filters.append(item.in_(self.request.args[k]))
-                    filters.append(or_(*new_filters))
-                else:
-                    filters.append(ua[k].in_(self.request.args[k]))
+                    filters.append(url_parts[k] == self.kwargs[k])
+        return filters
 
-        if self.filter_by_creator and hasattr(m, "created_by_id"):
-            filters.append(getattr(m, "created_by_id") == self.request.user.id)
+    def get_query_params_filters(self):
+        """
+        This method creates a list of SQLAlchemy Model filters that we apply to the queryset (to get an item or list).
+        The filter-able fields are specified in the self.query_params dict().
+        Each entry in self.query_params should specify the field name as in the URL part and then the corresponding Model
+            field that we want to query.
+        """
+        filters = []
+        query_params = self.query_params
+        for k,v in self.request.args.items():
+            if k in query_params:
+                if type(query_params[k]) is list:
+                    filters.append(item.in_(self.request.args[k]))
+                else:
+                    filters.append(query_params[k].in_(self.request.args[k]))
         return filters
 
     def get_all_filters(self, *args, **kwargs):
-        return self.get_default_filters() + self.get_url_parts_filters()
+        model = self.get_model()
+        filters = self.get_default_filters() + self.get_url_parts_filters() + self.get_query_params_filters()
+
+        if self.filter_by_creator and hasattr(model, "created_by_id"):
+            filters.append(getattr(model, "created_by_id") == self.request.user.id)
+        return filters
 
 
 class ModelMixin(object):
@@ -68,10 +80,13 @@ class ModelMixin(object):
         return self.model
 
     def get_queryset(self):
-        return self.get_model().query().filter(*self.get_all_filters())
-
-    def get_item(self):
-        return self.get_queryset().one()
+        if hasattr(self, "get_all_filters"):
+            query = self.get_model().query().filter(*self.get_all_filters())
+        else:
+            query = self.get_model().query()
+        if hasattr(self, "get_ordering"):
+            query = query.order_by(*self.get_ordering())
+        return query
 
     def has_related(self):
         m = self.get_model()
@@ -86,19 +101,36 @@ class ModelMixin(object):
             return self.serializer_class(partial=partial)
 
 
-class ListMixin(QueryFilter, ModelMixin):
+class OrderMixin(object):
+    def get_ordering(self):
+        return [
+            self.model.id.asc()
+        ]
+
+
+class ListMixin(QueryFilter, ModelMixin, OrderMixin):
     """
     This mixin is used to get a list of items for a given model.
     """
 
-    def get_queryset(self):
-        if hasattr(self, "get_all_filters"):
-            return self.get_model().query().filter(*self.get_all_filters())
-        else:
-            return self.get_model().query()
-
     def get_list(self):
-        return self.get_queryset().all()
+        try:
+            slice_start = (
+                (int(self.request.args.get("page_number", 1)) - 1) *
+                int(self.request.args.get("page_size", 100)) + 1
+            )
+            slice_end = (
+                int(self.request.args.get("page_number", 1)) *
+                int(self.request.args.get("page_size", 100))
+            )
+            return self.get_queryset()[slice_start:slice_end]
+        except DataError:
+            db.session.rollback()
+            return []
+        except ProgrammingError as e:
+            print(e)
+            db.session.rollback()
+            return []
 
     def handle_get(self, *args, **kwargs):
         return response.json(
@@ -106,12 +138,15 @@ class ListMixin(QueryFilter, ModelMixin):
         )
 
 
-class ViewMixin(QueryFilter, ModelMixin):
+class ViewMixin(QueryFilter, ModelMixin, OrderMixin):
     """
     This mixin is used to get a single item for a given model.
 
     When we are reading an item for any model, we require some filters.
     """
+
+    def get_item(self):
+        return self.get_queryset().one()
 
     def handle_get(self, *args, **kwargs):
         try:
@@ -196,7 +231,7 @@ class CreateMixin(ModelMixin):
                     },
                 },
             })
-        except DataError:
+        except DataError as e:
             db.session.rollback()
             # TODO: Usually this is a length mismatch error, handle this
             raise ServerError()
@@ -349,3 +384,26 @@ class UpdateMixin(QueryFilter, ModelMixin):
 
     def handle_patch(self, *args, **kwargs):
         return self.handle_put(*args, **kwargs)
+
+
+class CORSMixin(object):
+    allowed_origins = None
+    allowed_methods = None
+    allowed_headers = None
+
+    def handle_options(self, *args, **kwargs):
+        allowed_origins = self.allowed_origins if self.allowed_origins else settings.ALLOWED_ORIGINS
+
+        if "ORIGIN" in self.request.headers:
+            origin = self.request.headers["ORIGIN"]
+            if origin in allowed_origins:
+                headers = {
+                    "Access-Control-Allow-Origin": origin,
+                    "Access-Control-Allow-Methods": "OPTIONS,GET,POST,PUT,PATCH,DELETE" if self.allowed_methods is None else self.allowed_methods,
+                    "Access-Control-Allow-Headers": "Content-Type" if self.allowed_headers is None else self.allowed_headers
+                }
+                return response.raw(None, status=204, headers=headers)
+            else:
+                return response.raw(None, status=204)
+        else:
+            return response.raw(None, status=204)
