@@ -387,19 +387,15 @@ class UpdateMixin(QueryFilter, ModelMixin):
 
 
 class CORSMixin(object):
-    allowed_origins = None
     allowed_methods = "OPTIONS,GET,POST,PUT,PATCH,DELETE"
     allowed_headers = "Access-Control-Allow-Headers,Origin,Accept,X-Requested-With" \
                       ",Content-Type,Access-Control-Request-Method,Access-Control-Request-Headers"
 
     def handle_options(self, *args, **kwargs):
-        allowed_origins = self.allowed_origins if self.allowed_origins else settings.ALLOWED_ORIGINS
-
         if "ORIGIN" in self.request.headers:
             origin = self.request.headers["ORIGIN"]
-            if origin in allowed_origins:
+            if origin in settings.ALLOWED_ORIGINS:
                 headers = {
-                    "Access-Control-Allow-Origin": origin,
                     "Access-Control-Allow-Methods": self.allowed_methods,
                     "Access-Control-Allow-Headers": self.allowed_headers,
                 }
