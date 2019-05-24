@@ -28,8 +28,8 @@ def session_middlewares(app):
 
 def cors_middlewares(app):
     def response_middleware(request, response):
-        origin = request.headers["ORIGIN"]
-        if origin in settings.ALLOWED_ORIGINS:
+        origin = request.headers.get("ORIGIN", None)
+        if origin and origin in settings.ALLOWED_ORIGINS:
             response.headers["Access-Control-Allow-Origin"] = origin
 
     app.register_middleware(response_middleware, attach_to="response")

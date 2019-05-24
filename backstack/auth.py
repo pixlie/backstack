@@ -71,9 +71,12 @@ def login_required(func):
 
 def owner_required(func=None, field_to_check=None):
     """
-    This is a decorator that can be applied to a Controller method that needs to test the ownership of
-    an object before allowing a succesful response. It first checks if the user is logged in and
-    then goes ahead to check if the object is owned by the current user.
+    This is a decorator that can be applied to a Controller method that needs to allow request to process only if checks
+    are successful.
+
+    It checks:
+      - if the user is logged in (And)
+      - if the object is owned by the current user.
 
     The current object is fetched using the Controller instance's `get_item` method.
     It is assumed that the item has a property `created_by_id` and this should match the `id` of the
@@ -108,6 +111,25 @@ def owner_required(func=None, field_to_check=None):
 
 
 def admin_required(func):
+    """
+    This is a decorator that can be applied to a Controller method that needs to allow request to process only if checks
+    are successful.
+
+    It checks:
+      - if the user is logged in (And)
+      - if the user is an admin
+
+    The current object is fetched using the Controller instance's `get_item` method.
+    It is assumed that the item has a property `created_by_id` and this should match the `id` of the
+    `request.user`.
+
+    :param func: The is the function being decorated.
+    :param str field_to_check: Use this to specify that returns the owner of the model if it is not created_by_id
+    :return: Either the method that is decorated (if user is logged in and owner). If the user is not
+        logged in then the return is a `unauthenticated` response (HTTP 401). If the user is not the owner then
+        the return is a `unauthorized` response (HTTP 403).
+    """
+
     def inner(controller_obj, *args, **kwargs):
         if controller_obj.request.is_authenticated:
             if controller_obj.request.user.is_admin:
@@ -118,6 +140,49 @@ def admin_required(func):
             raise Unauthenticated()
 
     inner.__decorated__ = "admin_required"
+    return inner
+
+
+def owner_or_admin_required(func=None, field_to_check=None):
+    """
+    This is a decorator that can be applied to a Controller method that needs to allow request to process only if checks
+    are successful.
+
+    It checks:
+      - if the user is logged in (And)
+        - (Either) if the object is owned by the current user
+        - (Or) if the user is an admin
+
+    The current object is fetched using the Controller instance's `get_item` method.
+    It is assumed that the item has a property `created_by_id` and this should match the `id` of the
+    `request.user`.
+
+    :param func: The is the function being decorated.
+    :param str field_to_check: Use this to specify that returns the owner of the model if it is not created_by_id
+    :return: Either the method that is decorated (if user is logged in and owner). If the user is not
+        logged in then the return is a `unauthenticated` response (HTTP 401). If the user is not the owner then
+        the return is a `unauthorized` response (HTTP 403).
+    """
+
+    if func is None:
+        return partial(owner_required, field_to_check=field_to_check)
+
+    @wraps(func)
+    def inner(controller_obj, *args, **kwargs):
+        if field_to_check is not None:
+            owner_id = getattr(controller_obj.get_item(), field_to_check)
+        else:
+            owner_id = controller_obj.get_item().created_by_id
+
+        if controller_obj.request.is_authenticated:
+            if owner_id == controller_obj.request.user.id or controller_obj.request.user.is_admin:
+                return func(controller_obj, *args, **kwargs)
+            else:
+                raise Unauthorized()
+        else:
+            raise Unauthenticated()
+
+    inner.__decorated__ = "owner_required"
     return inner
 
 

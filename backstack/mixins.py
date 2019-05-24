@@ -1,5 +1,4 @@
 from sanic import response
-from sqlalchemy import or_
 from sqlalchemy.exc import IntegrityError, StatementError, DataError, ProgrammingError
 from sqlalchemy.orm.exc import NoResultFound
 from marshmallow.exceptions import ValidationError
