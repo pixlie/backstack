@@ -139,4 +139,7 @@ class Commands(object):
         self.__args = args
 
         if args.action in self.get_commands() and hasattr(self, args.action):
-            getattr(self, args.action)(args.sub_commands)
+            if args.action == "migrations":
+                getattr(self, args.action)(args.sub_commands)
+            else:
+                getattr(self, args.action)()
