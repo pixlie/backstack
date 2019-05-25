@@ -1,5 +1,6 @@
 import importlib
 import argparse
+from migrate.versioning.shell import main as migrations
 
 from .db import db, Base
 from .config import settings
@@ -8,7 +9,9 @@ from .config import settings
 class Commands(object):
     __app = None
     __args = None
-    commands = ["server", "drop_tables", "create_tables", "load_fixtures", "load_fakes", "run_workers", "shell"]
+    commands = [
+        "server", "drop_tables", "create_tables", "load_fixtures", "load_fakes", "run_workers", "shell", "migrations"
+    ]
 
     def __init__(self, app=None):
         if app is None:
@@ -103,6 +106,15 @@ class Commands(object):
         self.__app.go_fast(**settings.DAEMON)
 
     @staticmethod
+    def migrations(sub_commands):
+        migrations(
+            sub_commands,
+            repository=settings.DB_MIGRATIONS_FOLDER,
+            url=settings.DB_DEFAULT,
+            debug="False"
+        )
+
+    @staticmethod
     def shell():
         import code
         code.interact(local=locals())
@@ -111,15 +123,20 @@ class Commands(object):
         return self.commands
 
     def execute(self):
-        parser = argparse.ArgumentParser(description="default backend")
+        parser = argparse.ArgumentParser(description="Backstack commands")
         parser.add_argument(
             "action",
             action="store",
             choices=self.get_commands()
+        )
+        parser.add_argument(
+            "sub_commands",
+            action="store",
+            nargs="*"
         )
 
         args = parser.parse_args()
         self.__args = args
 
         if args.action in self.get_commands() and hasattr(self, args.action):
-            getattr(self, args.action)()
+            getattr(self, args.action)(args.sub_commands)

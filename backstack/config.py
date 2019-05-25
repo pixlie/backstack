@@ -24,6 +24,9 @@ class Settings(metaclass=Singleton):
         self.DB_DEFAULT = config("DB_DEFAULT", cast=str)
         self.DB_TEST = config("DB_TEST", cast=str)
 
+        # Database migrations using SQLAlchemy-migrate
+        self.DB_MIGRATIONS_FOLDER = config("DB_MIGRATIONS_FOLDER", cast=str, default="db-migrations")
+
         # Settings for running the server on localhost with port number
         self.DAEMON = {
             "host": config("DAEMON_HOST", cast=str, default="127.0.0.1"),
@@ -63,7 +66,11 @@ class Settings(metaclass=Singleton):
 
         self.SESSION_COOKIE_NAME = config("SESSION_COOKIE_NAME", cast=str)
 
-        self.ALLOWED_ORIGINS = config("ALLOWED_ORIGINS", cast=lambda v: [s.strip() for s in v.split(',')], default=[])
+        self.ALLOWED_ORIGINS = config(
+            "ALLOWED_ORIGINS",
+            cast=lambda v: [s.strip() for s in v.split(',')],
+            default="http://localhost:3000,"
+        )
 
 
 settings = Settings()
