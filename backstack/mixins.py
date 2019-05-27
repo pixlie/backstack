@@ -113,14 +113,25 @@ class ListMixin(QueryFilter, ModelMixin, OrderMixin):
     """
 
     def get_list(self):
+        """
+        `page_number` is coming from the URL params and it is indexed from 1.
+        `page_size` is also coming from the URL params and it tells us how many rows we send per page.
+
+        In the slice calculation we index by 0.
+
+        Examples:
+        page 1, with size 100 means slice(0, 99).
+        page 2, with size 100 means slice(100, 199).
+        page 3, with size 50 means slice(150, 199).
+        """
         try:
             slice_start = (
                 (int(self.request.args.get("page_number", 1)) - 1) *
-                int(self.request.args.get("page_size", 100)) + 1
+                int(self.request.args.get("page_size", 100))
             )
             slice_end = (
                 int(self.request.args.get("page_number", 1)) *
-                int(self.request.args.get("page_size", 100))
+                int(self.request.args.get("page_size", 100)) - 1
             )
             return self.get_queryset()[slice_start:slice_end]
         except DataError:
