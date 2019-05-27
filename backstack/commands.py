@@ -1,6 +1,7 @@
 import importlib
 import argparse
 from migrate.versioning.shell import main as migrations
+from migrate.exceptions import DatabaseAlreadyControlledError
 
 from .db import db, Base
 from .config import settings
@@ -107,12 +108,15 @@ class Commands(object):
 
     @staticmethod
     def migrations(sub_commands):
-        migrations(
-            sub_commands,
-            repository=settings.DB_MIGRATIONS_FOLDER,
-            url=settings.DB_DEFAULT,
-            debug="False"
-        )
+        try:
+            migrations(
+                sub_commands,
+                repository=settings.DB_MIGRATIONS_FOLDER,
+                url=settings.DB_DEFAULT,
+                debug="False"
+            )
+        except DatabaseAlreadyControlledError:
+            print("Your database is already under version control for Migrations; nothing to be done.")
 
     @staticmethod
     def shell():
