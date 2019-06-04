@@ -6,6 +6,7 @@ from marshmallow.exceptions import ValidationError
 from .db import db
 from .errors import NotFound, ServerError, Errors
 from .config import settings
+from .helpers.cors import handle_cors
 
 
 class QueryFilter(object):
@@ -398,19 +399,12 @@ class UpdateMixin(QueryFilter, ModelMixin):
 
 class CORSMixin(object):
     allowed_methods = "OPTIONS,GET,POST,PUT,PATCH,DELETE"
-    allowed_headers = "Access-Control-Allow-Headers,Origin,Accept,X-Requested-With" \
+    allowed_headers = "Authorization,Access-Control-Allow-Headers,Origin,Accept,X-Requested-With" \
                       ",Content-Type,Access-Control-Request-Method,Access-Control-Request-Headers"
 
-    def handle_options(self, *args, **kwargs):
-        if "ORIGIN" in self.request.headers:
-            origin = self.request.headers["ORIGIN"]
-            if origin in settings.ALLOWED_ORIGINS:
-                headers = {
-                    "Access-Control-Allow-Methods": self.allowed_methods,
-                    "Access-Control-Allow-Headers": self.allowed_headers,
-                }
-                return response.raw(None, status=204, headers=headers)
-            else:
-                return response.raw(None, status=204)
-        else:
-            return response.raw(None, status=204)
+    def handle_options(self):
+        return handle_cors(
+            request=self.request,
+            allowed_methods=self.allowed_methods,
+            allowed_headers=self.allowed_headers
+        )
