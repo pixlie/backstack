@@ -402,7 +402,7 @@ class CORSMixin(object):
     allowed_headers = "Authorization,Access-Control-Allow-Headers,Origin,Accept,X-Requested-With" \
                       ",Content-Type,Access-Control-Request-Method,Access-Control-Request-Headers"
 
-    def handle_options(self):
+    def handle_options(self, *args, **kwargs):
         return handle_cors(
             request=self.request,
             allowed_methods=self.allowed_methods,
