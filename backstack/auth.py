@@ -165,7 +165,7 @@ def owner_or_admin_required(func=None, field_to_check=None):
     """
 
     if func is None:
-        return partial(owner_required, field_to_check=field_to_check)
+        return partial(owner_or_admin_required, field_to_check=field_to_check)
 
     @wraps(func)
     def inner(controller_obj, *args, **kwargs):
