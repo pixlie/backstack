@@ -11,8 +11,8 @@ def handle_cors(request, allowed_methods, allowed_headers):
                 "Access-Control-Allow-Methods": allowed_methods,
                 "Access-Control-Allow-Headers": allowed_headers,
             }
-            return response.raw(None, status=204, headers=headers)
+            return response.raw("", status=204, headers=headers)
         else:
-            return response.raw(None, status=204)
+            return response.raw("", status=204)
     else:
-        return response.raw(None, status=204)
+        return response.raw("", status=204)
