@@ -18,8 +18,8 @@ class MainApp(Sanic, metaclass=Singleton):
                 urls = importlib.import_module("apps.%s.urls" % app)
                 if hasattr(urls, "setup_routes"):
                     urls.setup_routes(self)
-            except ImportError:
-                pass
+            except ImportError as e:
+                print("In app {}:".format(app), e)
 
     def add_route(self, *args, **kwargs):
         # Prepend /api to all API URLs by default

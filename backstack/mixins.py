@@ -2,10 +2,10 @@ from sanic import response
 from sqlalchemy.exc import IntegrityError, StatementError, DataError, ProgrammingError
 from sqlalchemy.orm.exc import NoResultFound
 from marshmallow.exceptions import ValidationError
+from .schema import pagination
 
 from .db import db
 from .errors import NotFound, ServerError, Errors
-from .config import settings
 from .helpers.cors import handle_cors
 
 
@@ -112,11 +112,12 @@ class ListMixin(QueryFilter, ModelMixin, OrderMixin):
     """
     This mixin is used to get a list of items for a given model.
     """
+    request = None  # This is populated by BaseController
 
     def get_list(self):
         """
-        `page_number` is coming from the URL params and it is indexed from 1.
-        `page_size` is also coming from the URL params and it tells us how many rows we send per page.
+        `page[number]` is coming from the URL params and it is indexed from 1.
+        `page[size]` is also coming from the URL params and it tells us how many rows we send per page.
 
         In the slice calculation we index by 0.
 
@@ -126,13 +127,14 @@ class ListMixin(QueryFilter, ModelMixin, OrderMixin):
         page 3, with size 50 means slice(150, 199).
         """
         try:
+            # These are Python array slices as needed my SQLAlchemy, so index starts from 0
             slice_start = (
-                (int(self.request.args.get("page_number", 1)) - 1) *
-                int(self.request.args.get("page_size", 100))
+                (int(self.request.args.get("page[number]", 1)) - 1) *
+                int(self.request.args.get("page[size]", 100))
             )
             slice_end = (
-                int(self.request.args.get("page_number", 1)) *
-                int(self.request.args.get("page_size", 100)) - 1
+                int(self.request.args.get("page[number]", 1)) *
+                int(self.request.args.get("page[size]", 100)) - 1
             )
             return self.get_queryset()[slice_start:slice_end]
         except DataError:
@@ -144,8 +146,14 @@ class ListMixin(QueryFilter, ModelMixin, OrderMixin):
             return []
 
     def handle_get(self, *args, **kwargs):
+        paged = pagination.Pagination(
+            page=1,
+            per_page=100,
+            total=self.get_queryset().count(),
+            items=self.get_list()
+        )
         return response.json(
-            self.get_serializer().dump(self.get_list(), many=True).data
+            self.get_serializer().paginate_dump(paged, request=self.request).data
         )
 
 
