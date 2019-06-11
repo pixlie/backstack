@@ -63,45 +63,59 @@ class Commands(object):
                 pass
 
     @staticmethod
-    def run_workers():
+    def check_workers():
         try:
-            import pika
+            import aioamqp
         except ImportError:
-            raise Exception("You have to install pika to run workers, see documentation for ERROR_WORKERS_PIKA")
-        connection = pika.BlockingConnection(pika.ConnectionParameters(
-            host=settings.RABBITMQ_HOST,
-            port=settings.RABBITMQ_PORT
-        ))
-        channel = connection.channel()
-
-        channel.exchange_declare(
-            exchange=settings.RABBITMQ_EXCHANGE,
-            exchange_type="topic"
-        )
+            raise Exception("You have to install aioamqp to run workers,"
+                            " see documentation for ERROR_WORKERS_REQUIREMENTS")
 
         # Search for workers.setup_workers in all apps
+        all_workers = []
         for app in settings.APPS:
             try:
                 workers = importlib.import_module("apps.%s.workers" % app)
                 if hasattr(workers, "setup_workers"):
-                    workers = workers.setup_workers()
-                    for binding in workers:
-                        result = channel.queue_declare(exclusive=True)
-                        queue_name = result.method.queue
-                        for key in binding[1]:
-                            channel.queue_bind(
-                                exchange=settings.RABBITMQ_EXCHANGE,
-                                queue=queue_name,
-                                routing_key=key
-                            )
-                        channel.basic_consume(
-                            binding[0],
-                            queue=queue_name,
-                            no_ack=True
-                        )
+                    all_workers.append(*workers.setup_workers())
+                print("INFO: Worker found in app {}".format(app))
             except ImportError:
-                pass
-        channel.start_consuming()
+                print("INFO: No worker found in app {}".format(app))
+
+        if not all_workers:
+            return False
+
+        return all_workers
+
+    @staticmethod
+    async def run_workers(all_workers):
+        import aioamqp
+        try:
+            transport, protocol = await aioamqp.connect(settings.RABBITMQ_HOST, settings.RABBITMQ_PORT)
+            channel = await protocol.channel()
+            exchange_name = settings.RABBITMQ_EXCHANGE
+            await channel.exchange_declare(
+                exchange_name=exchange_name,
+                type_name="topic"
+            )
+
+            for binding in all_workers:
+                result = await channel.queue_declare(binding[0].__name__, exclusive=True, durable=True)
+                queue_name = result["queue"]
+
+                for key in binding[1]:
+                    await channel.queue_bind(
+                        exchange_name=settings.RABBITMQ_EXCHANGE,
+                        queue_name=queue_name,
+                        routing_key=key
+                    )
+                await channel.basic_consume(
+                    callback=binding[0],
+                    queue_name=queue_name,
+                    no_ack=True
+                )
+        except aioamqp.AmqpClosedConnection:
+            raise Exception("Can not connect to RabbitMQ, please make sure it is running,"
+                            " see documentation for ERROR_WORKERS_REQUIREMENTS")
 
     def server(self):
         self.__app.go_fast(**settings.DAEMON)
@@ -143,7 +157,20 @@ class Commands(object):
         self.__args = args
 
         if args.action in self.get_commands() and hasattr(self, args.action):
-            if args.action == "migrations":
+            if args.action == "run_workers":
+                try:
+                    import asyncio
+                except ImportError:
+                    raise Exception("You have to install asyncio to run workers,"
+                                    " see documentation for ERROR_WORKERS_REQUIREMENTS")
+
+                all_workers = self.check_workers()
+
+                if all_workers is not False:
+                    event_loop = asyncio.get_event_loop()
+                    event_loop.run_until_complete(self.run_workers(all_workers=all_workers))
+                    event_loop.run_forever()
+            elif args.action == "migrations":
                 getattr(self, args.action)(args.sub_commands)
             else:
                 getattr(self, args.action)()

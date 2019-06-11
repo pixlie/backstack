@@ -29,7 +29,7 @@ setup(
         "sqlalchemy-migrate",
         "marshmallow",
         "passlib",
-        "pika",
+        "aioamqp",
         "ujson",
         "faker",
     ]
