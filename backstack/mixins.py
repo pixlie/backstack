@@ -75,6 +75,7 @@ class QueryFilter(object):
 class ModelMixin(object):
     model = None
     serializer_class = None
+    include_data = ()
 
     def get_model(self):
         return self.model
@@ -96,9 +97,9 @@ class ModelMixin(object):
     def get_serializer(self, instance=None):
         partial = True if self.request.method == "PATCH" else False
         if instance:
-            return self.serializer_class(partial=partial, instance=instance)
+            return self.serializer_class(partial=partial, instance=instance, include_data=self.include_data)
         else:
-            return self.serializer_class(partial=partial)
+            return self.serializer_class(partial=partial, include_data=self.include_data)
 
 
 class OrderMixin(object):

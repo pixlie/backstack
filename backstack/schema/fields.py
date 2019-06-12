@@ -112,3 +112,15 @@ class Function(Defaults, fields.Function):
 
 class Dict(Defaults, fields.Dict):
     __classname__ = "dict"
+
+
+class Relationship(fields.Relationship):
+    def _deserialize(self, value, attr, obj):
+        # If we have a scheme declared for a Relationship then we use that so that the corresponding model is loaded.
+        if hasattr(self, "schema") and not self.many and "id" in value:
+            return self.schema.load({"data": value, "included": self.root.included_data}).data
+        elif hasattr(self, "schema") and self.many and len([x["id"] for x in value]) == len(value):
+            # This is for lists of related data, we checked that each row has an id
+            return [self.schema.load({"data": v, "included": self.root.included_data}).data for v in value]
+        else:
+            return super()._deserialize(value, attr, obj)
