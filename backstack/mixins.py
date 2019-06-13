@@ -76,17 +76,36 @@ class ModelMixin(object):
     model = None
     serializer_class = None
     include_data = ()
+    query = None
+
+    def get_include_data(self):
+        """
+        The include_data argument is sent to marshmallow-jsonapi Schema and it lists the relationships whose data
+        should be included.
+
+        This method may be overridden from controller to dynamically change the included related data in output.
+        :return: tuple list of relationship field names
+        """
+        return self.include_data
+
+    def get_all_filters(self):
+        raise NotImplementedError()
 
     def get_model(self):
         return self.model
 
     def get_queryset(self):
-        if hasattr(self, "get_all_filters"):
-            query = self.get_model().query().filter(*self.get_all_filters())
+        if self.query is not None:
+            query = self.query
         else:
-            query = self.get_model().query()
+            query = self.get_model().query().filter(*self.get_all_filters())
+
         if hasattr(self, "get_ordering"):
             query = query.order_by(*self.get_ordering())
+
+        if hasattr(self, "get_grouping"):
+            query = query.group_by(*self.get_grouping())
+
         return query
 
     def has_related(self):
@@ -96,10 +115,11 @@ class ModelMixin(object):
 
     def get_serializer(self, instance=None):
         partial = True if self.request.method == "PATCH" else False
+        include_data = self.get_include_data()
         if instance:
-            return self.serializer_class(partial=partial, instance=instance, include_data=self.include_data)
+            return self.serializer_class(partial=partial, instance=instance, include_data=include_data)
         else:
-            return self.serializer_class(partial=partial, include_data=self.include_data)
+            return self.serializer_class(partial=partial, include_data=include_data)
 
 
 class OrderMixin(object):
