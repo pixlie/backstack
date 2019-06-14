@@ -1,5 +1,12 @@
 from marshmallow import Schema, post_load
-from . import schema_fields as fields
+from . import fields
+
+
+class PaginationSchema(Schema):
+    number = fields.Integer()
+    size = fields.Integer()
+    total_pages = fields.Integer()
+    total_count = fields.Integer()
 
 
 class SystemSchema(Schema):
@@ -31,6 +38,21 @@ class SystemSchema(Schema):
 
     def get_instance(self):
         return self.__instance__
+
+    def paginated_dump(self, data):
+        class_paginated_schema = type("PaginatedSchema", (Schema, ),  {
+            "pagination": fields.Nested(PaginationSchema),
+            "data": fields.Nested(data["schema"].__class__, many=True)
+        })
+        return class_paginated_schema().dump({
+            "pagination": {
+                "number": data["number"],
+                "size": data["size"],
+                "total_pages": int(data["count"] / data["size"]),
+                "total_count": data["count"]
+            },
+            "data": data["items"],
+        })
 
 
 class BaseSchema(SystemSchema):

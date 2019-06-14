@@ -112,11 +112,12 @@ class ListMixin(QueryFilter, ModelMixin, OrderMixin):
     """
     This mixin is used to get a list of items for a given model.
     """
+    request = None
 
     def get_list(self):
         """
-        `page_number` is coming from the URL params and it is indexed from 1.
-        `page_size` is also coming from the URL params and it tells us how many rows we send per page.
+        `page[number]` is coming from the URL params and it is indexed from 1.
+        `page[size]` is also coming from the URL params and it tells us how many rows we send per page.
 
         In the slice calculation we index by 0.
 
@@ -127,12 +128,12 @@ class ListMixin(QueryFilter, ModelMixin, OrderMixin):
         """
         try:
             slice_start = (
-                (int(self.request.args.get("page_number", 1)) - 1) *
-                int(self.request.args.get("page_size", 100))
+                (int(self.request.args.get("page[number]", 1)) - 1) *
+                int(self.request.args.get("page[size]", 100))
             )
             slice_end = (
-                int(self.request.args.get("page_number", 1)) *
-                int(self.request.args.get("page_size", 100)) - 1
+                int(self.request.args.get("page[number]", 1)) *
+                int(self.request.args.get("page[size]", 100)) - 1
             )
             return self.get_queryset()[slice_start:slice_end]
         except DataError:
@@ -144,8 +145,15 @@ class ListMixin(QueryFilter, ModelMixin, OrderMixin):
             return []
 
     def handle_get(self, *args, **kwargs):
+        paged_data = dict(
+            number=int(self.request.args.get("page[number]", 1)),
+            size=int(self.request.args.get("page[size]", 100)),
+            count=self.get_queryset().count(),
+            items=self.get_list(),
+            schema=self.get_serializer()
+        )
         return response.json(
-            self.get_serializer().dump(self.get_list(), many=True).data
+            self.get_serializer().paginated_dump(paged_data).data
         )
 
 
