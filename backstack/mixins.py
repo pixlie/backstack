@@ -5,7 +5,6 @@ from marshmallow.exceptions import ValidationError
 
 from .db import db
 from .errors import NotFound, ServerError, Errors
-from .config import settings
 from .helpers.cors import handle_cors
 
 
@@ -75,17 +74,26 @@ class QueryFilter(object):
 class ModelMixin(object):
     model = None
     serializer_class = None
+    query = None
 
     def get_model(self):
         return self.model
 
+    def get_all_filters(self):
+        raise NotImplementedError()
+
     def get_queryset(self):
-        if hasattr(self, "get_all_filters"):
-            query = self.get_model().query().filter(*self.get_all_filters())
+        if self.query is not None:
+            query = self.query
         else:
-            query = self.get_model().query()
+            query = self.get_model().query().filter(*self.get_all_filters())
+
         if hasattr(self, "get_ordering"):
             query = query.order_by(*self.get_ordering())
+
+        if hasattr(self, "get_grouping"):
+            query = query.group_by(*self.get_grouping())
+
         return query
 
     def has_related(self):
@@ -101,14 +109,7 @@ class ModelMixin(object):
             return self.serializer_class(partial=partial)
 
 
-class OrderMixin(object):
-    def get_ordering(self):
-        return [
-            self.model.id.asc()
-        ]
-
-
-class ListMixin(QueryFilter, ModelMixin, OrderMixin):
+class ListMixin(QueryFilter, ModelMixin):
     """
     This mixin is used to get a list of items for a given model.
     """
@@ -127,14 +128,18 @@ class ListMixin(QueryFilter, ModelMixin, OrderMixin):
         page 3, with size 50 means slice(150, 199).
         """
         try:
-            slice_start = (
-                (int(self.request.args.get("page[number]", 1)) - 1) *
-                int(self.request.args.get("page[size]", 100))
-            )
-            slice_end = (
-                int(self.request.args.get("page[number]", 1)) *
-                int(self.request.args.get("page[size]", 100)) - 1
-            )
+            number = int(self.request.args.get("page[number]"), 10)
+        except (ValueError, TypeError):
+            number = 1
+
+        try:
+            size = int(self.request.args.get("page[size]"), 10)
+        except (ValueError, TypeError):
+            size = 100
+
+        try:
+            slice_start = ((number - 1) * size)
+            slice_end = (number * size - 1)
             return self.get_queryset()[slice_start:slice_end]
         except DataError:
             db.session.rollback()
@@ -144,10 +149,25 @@ class ListMixin(QueryFilter, ModelMixin, OrderMixin):
             db.session.rollback()
             return []
 
+    def get_ordering(self):
+        return [
+            self.model.id.asc()
+        ]
+
     def handle_get(self, *args, **kwargs):
+        try:
+            number = int(self.request.args.get("page[number]"), 10)
+        except (ValueError, TypeError):
+            number = 1
+
+        try:
+            size = int(self.request.args.get("page[size]"), 10)
+        except (ValueError, TypeError):
+            size = 100
+
         paged_data = dict(
-            number=int(self.request.args.get("page[number]", 1)),
-            size=int(self.request.args.get("page[size]", 100)),
+            number=number,
+            size=size,
             count=self.get_queryset().count(),
             items=self.get_list(),
             schema=self.get_serializer()
@@ -157,7 +177,7 @@ class ListMixin(QueryFilter, ModelMixin, OrderMixin):
         )
 
 
-class ViewMixin(QueryFilter, ModelMixin, OrderMixin):
+class ViewMixin(QueryFilter, ModelMixin):
     """
     This mixin is used to get a single item for a given model.
 
