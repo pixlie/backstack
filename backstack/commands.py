@@ -15,14 +15,18 @@ class Commands(object):
     ]
 
     def __init__(self, app=None):
-        if app is None:
-            from .app import create_app
-            self.__app = create_app()
-        else:
+        if app is not None:
             self.__app = app
 
+    @property
+    def app(self):
+        from .app import create_app
+        if self.__app is None:
+            self.__app = create_app()
+        return self.__app
+
     def create_tables(self):
-        self.__app.load_models()
+        self.app.load_models()
         Base.metadata.create_all(db.engine)
 
     @staticmethod
@@ -62,8 +66,50 @@ class Commands(object):
             except ImportError:
                 pass
 
-    @staticmethod
-    def check_workers():
+    async def run_workers(self, all_workers):
+        import aioamqp
+        try:
+            transport, protocol = await aioamqp.connect(
+                settings.RABBITMQ_HOST,
+                settings.RABBITMQ_PORT,
+                # loop=self.app.loop
+            )
+            channel = await protocol.channel()
+            await channel.exchange_declare(
+                exchange_name=settings.get_mq_exchange_name(),
+                type_name="topic",
+                durable=True
+            )
+
+            for binding in all_workers:
+                result = await channel.queue_declare(
+                    queue_name=binding[0].__name__,
+                    durable=True
+                )
+                queue_name = result["queue"]
+
+                for key in binding[1]:
+                    await channel.queue_bind(
+                        exchange_name=settings.get_mq_exchange_name(),
+                        queue_name=queue_name,
+                        routing_key=key
+                    )
+                await channel.basic_consume(
+                    callback=binding[0],
+                    queue_name=queue_name,
+                    no_ack=binding[2]
+                )
+        except aioamqp.AmqpClosedConnection:
+            raise Exception("Can not connect to RabbitMQ, please make sure it is running,"
+                            " see documentation for ERROR_WORKERS_REQUIREMENTS")
+
+    def manage_workers(self):
+        try:
+            import asyncio
+        except ImportError:
+            raise Exception("You have to install asyncio to run workers,"
+                            " see documentation for ERROR_WORKERS_REQUIREMENTS")
+
         try:
             import aioamqp
         except ImportError:
@@ -84,41 +130,19 @@ class Commands(object):
         if not all_workers:
             return False
 
-        return all_workers
-
-    @staticmethod
-    async def run_workers(all_workers):
-        import aioamqp
-        try:
-            transport, protocol = await aioamqp.connect(settings.RABBITMQ_HOST, settings.RABBITMQ_PORT)
-            channel = await protocol.channel()
-            exchange_name = settings.RABBITMQ_EXCHANGE
-            await channel.exchange_declare(
-                exchange_name=exchange_name,
-                type_name="topic"
-            )
-
-            for binding in all_workers:
-                result = await channel.queue_declare(binding[0].__name__, exclusive=True, durable=True)
-                queue_name = result["queue"]
-
-                for key in binding[1]:
-                    await channel.queue_bind(
-                        exchange_name=settings.RABBITMQ_EXCHANGE,
-                        queue_name=queue_name,
-                        routing_key=key
-                    )
-                await channel.basic_consume(
-                    callback=binding[0],
-                    queue_name=queue_name,
-                    no_ack=True
-                )
-        except aioamqp.AmqpClosedConnection:
-            raise Exception("Can not connect to RabbitMQ, please make sure it is running,"
-                            " see documentation for ERROR_WORKERS_REQUIREMENTS")
+        if all_workers is not False:
+            # loop = self.app.loop
+            loop = asyncio.get_event_loop()
+            try:
+                loop.run_until_complete(self.run_workers(all_workers=all_workers))
+                loop.run_forever()
+            except aioamqp.exceptions.ChannelClosed as e:
+                if e.code == 404:
+                    print("It seems that the RabbitMQ exchange {} does not exist,"
+                          " perhaps nothing has been published to it".format(settings.get_mq_exchange_name()))
 
     def server(self):
-        self.__app.go_fast(**settings.DAEMON)
+        self.app.go_fast(**settings.DAEMON)
 
     @staticmethod
     def migrations(sub_commands):
@@ -158,18 +182,7 @@ class Commands(object):
 
         if args.action in self.get_commands() and hasattr(self, args.action):
             if args.action == "run_workers":
-                try:
-                    import asyncio
-                except ImportError:
-                    raise Exception("You have to install asyncio to run workers,"
-                                    " see documentation for ERROR_WORKERS_REQUIREMENTS")
-
-                all_workers = self.check_workers()
-
-                if all_workers is not False:
-                    event_loop = asyncio.get_event_loop()
-                    event_loop.run_until_complete(self.run_workers(all_workers=all_workers))
-                    event_loop.run_forever()
+                self.manage_workers()
             elif args.action == "migrations":
                 getattr(self, args.action)(args.sub_commands)
             else:

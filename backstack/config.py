@@ -72,5 +72,8 @@ class Settings(metaclass=Singleton):
             default="http://localhost:3000,"
         )
 
+    def get_mq_exchange_name(self):
+        return "{}.{}".format(self.RABBITMQ_EXCHANGE, "topic")
+
 
 settings = Settings()
