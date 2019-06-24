@@ -43,11 +43,11 @@ class SystemModel(Base):
                 raise
 
     @classmethod
-    def query(cls, *args, **kwargs):
+    def query(cls, *args):
         cls.metadata.bind = db.engine
         if args:
             return db.session.query(*args)
-        return db.session.query(cls)
+        return db.session.query(cls if len(args) == 0 else args)
 
     def as_dict(self):
         return {c.name: getattr(self, c.name) for c in self.__table__.columns}
