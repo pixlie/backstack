@@ -18,11 +18,11 @@ class Settings(metaclass=Singleton):
         # Python path to the User model class (SQLAlchemy model)
         # This is not read from settings.ini, instead set this in your main.py like
         #  `settings.USER_MODEL = "apps.account.models.User"`
-        self.USER_MODEL = config("USER_MODEL", cast=str)
+        self.USER_MODEL = config("USER_MODEL", cast=str, default=None)
 
         # Datebase configurations
-        self.DB_DEFAULT = config("DB_DEFAULT", cast=str)
-        self.DB_TEST = config("DB_TEST", cast=str)
+        self.DB_DEFAULT = config("DB_DEFAULT", cast=str, default=None)
+        self.DB_TEST = config("DB_TEST", cast=str, default=None)
 
         # Database migrations using SQLAlchemy-migrate
         self.DB_MIGRATIONS_FOLDER = config("DB_MIGRATIONS_FOLDER", cast=str, default="db-migrations")
@@ -39,10 +39,10 @@ class Settings(metaclass=Singleton):
         self.WEBSITE_PROTOCOL = config("WEBSITE_PROTOCOL", cast=str, default="http")
         self.WEBSITE_DOMAIN = config("WEBSITE_DOMAIN", cast=str, default="localhost:3000")
 
-        self.MANDRILL_API_KEY = config("MANDRILL_API_KEY", cast=str, default="")
-        self.DEFAULT_FROM_EMAIL = config("DEFAULT_FROM_EMAIL", cast=str, default="")
-        self.DEFAULT_FROM_NAME = config("DEFAULT_FROM_NAME", cast=str, default="")
-        self.DEFAULT_SUBJECT_PREFIX = config("DEFAULT_SUBJECT_PREFIX", cast=str, default="")
+        self.MANDRILL_API_KEY = config("MANDRILL_API_KEY", cast=str, default=None)
+        self.DEFAULT_FROM_EMAIL = config("DEFAULT_FROM_EMAIL", cast=str, default=None)
+        self.DEFAULT_FROM_NAME = config("DEFAULT_FROM_NAME", cast=str, default=None)
+        self.DEFAULT_SUBJECT_PREFIX = config("DEFAULT_SUBJECT_PREFIX", cast=str, default=None)
 
         self.SECRET_KEY = config("SECRET_KEY", cast=str)
 
@@ -50,21 +50,21 @@ class Settings(metaclass=Singleton):
         self.RABBITMQ_PORT = config("RABBITMQ_PORT", cast=int, default=5672)
         self.RABBITMQ_EXCHANGE = config("RABBITMQ_EXCHANGE", cast=str, default="mq-exchange")
 
-        self.FACEBOOK_CONSUMER_KEY = config("FACEBOOK_CONSUMER_KEY", cast=str, default="")
-        self.FACEBOOK_CONSUMER_SECRET = config("FACEBOOK_CONSUMER_SECRET", cast=str, default="")
+        self.FACEBOOK_CONSUMER_KEY = config("FACEBOOK_CONSUMER_KEY", cast=str, default=None)
+        self.FACEBOOK_CONSUMER_SECRET = config("FACEBOOK_CONSUMER_SECRET", cast=str, default=None)
 
-        self.GOOGLE_CONSUMER_KEY = config("GOOGLE_CONSUMER_KEY", cast=str, default="")
-        self.GOOGLE_CONSUMER_SECRET = config("GOOGLE_CONSUMER_SECRET", cast=str, default="")
+        self.GOOGLE_CONSUMER_KEY = config("GOOGLE_CONSUMER_KEY", cast=str, default=None)
+        self.GOOGLE_CONSUMER_SECRET = config("GOOGLE_CONSUMER_SECRET", cast=str, default=None)
 
         self.MEMCACHED_HOST = config("MEMCACHED_HOST", cast=str, default="localhost")
 
         self.APPS = ()
 
         self.FILE_UPLOAD_PATH = config("FILE_UPLOAD_PATH", cast=str, default="/tmp/")
-        self.S3_BUCKET = config("S3_BUCKET", cast=str)
-        self.S3_ENDPOINT_URL = config("S3_ENDPOINT_URL", cast=str)
+        self.S3_BUCKET = config("S3_BUCKET", cast=str, default=None)
+        self.S3_ENDPOINT_URL = config("S3_ENDPOINT_URL", cast=str, default=None)
 
-        self.SESSION_COOKIE_NAME = config("SESSION_COOKIE_NAME", cast=str)
+        self.SESSION_COOKIE_NAME = config("SESSION_COOKIE_NAME", cast=str, default=None)
 
         self.ALLOWED_ORIGINS = config(
             "ALLOWED_ORIGINS",
