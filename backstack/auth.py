@@ -60,10 +60,21 @@ def login_required(func):
     :return: Either the method that is decorated (if user is logged in) else `unauthenticated` response (HTTP 401).
     """
     def inner(controller_obj, *args, **kwargs):
-        if controller_obj.request.is_authenticated:
-            return func(controller_obj, *args, **kwargs)
-        else:
-            raise Unauthenticated()
+        # If we wrap a method of any inherited class of BaseController, then we need this class to test
+        from .controllers import BaseController
+        # If we wrap a regular function then we need this class to test
+        from .app import CustomRequest
+
+        if isinstance(controller_obj, BaseController):
+            if controller_obj.request.is_authenticated:
+                return func(controller_obj, *args, **kwargs)
+            else:
+                raise Unauthenticated()
+        elif isinstance(controller_obj, CustomRequest):
+            if controller_obj.is_authenticated:
+                return func(*args, **kwargs)
+            else:
+                raise Unauthenticated()
 
     inner.__decorated__ = "login_required"
     return inner
