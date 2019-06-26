@@ -32,5 +32,6 @@ setup(
         "aioamqp",
         "ujson",
         "faker",
+        "sanic-ipware"
     ]
 )

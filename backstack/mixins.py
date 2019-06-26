@@ -200,6 +200,7 @@ class CreateMixin(ModelMixin):
     instance = None
     save_creator = True
     related_fields_to_create = None
+    request = None
 
     def get_insert_defaults(self):
         return {}
@@ -222,8 +223,8 @@ class CreateMixin(ModelMixin):
                         hasattr(self.instance, name) and
                         getattr(self.instance, name, None)):
                     fk_instance = getattr(self.instance, name)
-                    if(hasattr(fk_instance, "created_from") and self.request.ip):
-                        fk_instance.created_from = self.request.ip
+                    if hasattr(fk_instance, "created_from"):
+                        fk_instance.created_from = self.request.client_ip
                     fk_instance.save(commit=False)
                     # When we use flush, the INSERT query is sent to the
                     # database, but session is not committed now.
@@ -235,8 +236,8 @@ class CreateMixin(ModelMixin):
 
     def create_instance(self):
         instance = self.instance
-        if hasattr(instance, "created_from") and self.request.ip:
-            instance.created_from = self.request.ip
+        if hasattr(instance, "created_from"):
+            instance.created_from = self.request.client_ip
         if (self.save_creator and
                 hasattr(instance, "created_by_id") and
                 instance.created_by_id is None and self.request.user):
@@ -303,6 +304,7 @@ class UpdateMixin(QueryFilter, ModelMixin):
     instance = None
     related_fields_to_update = None
     save_creator = True
+    request = None
 
     def get_update_defaults(self):
         return {}
@@ -330,8 +332,8 @@ class UpdateMixin(QueryFilter, ModelMixin):
                     # This instance may have an PK (id) in case the related
                     # model already existed.
                     fk_instance = getattr(self.instance, name)
-                    if(hasattr(fk_instance, "created_from") and self.request.ip):
-                        fk_instance.created_from = self.request.ip
+                    if hasattr(fk_instance, "created_from"):
+                        fk_instance.created_from = self.request.client_ip
                     # SQLAlchemy will generate INSERT or UPDATE depending
                     # on the related models existance.
                     fk_instance.save(commit=False)

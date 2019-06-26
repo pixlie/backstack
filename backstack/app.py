@@ -64,10 +64,19 @@ class CustomRequest(Request):
         super().__init__(*args, **kwargs)
         self.user = None
         self.session = None
+        self.__client_ip = None
 
     @property
     def is_authenticated(self):
         return self.user is not None
+
+    @property
+    def client_ip(self):
+        if self.__client_ip is None:
+            from sanic_ipware import get_client_ip
+            ip, _ = get_client_ip(self)
+            self.__client_ip = ip
+        return self.__client_ip
 
 
 def create_app(override_settings=None, app_class=MainApp, middlewares=(session_middlewares, cors_middlewares)):
