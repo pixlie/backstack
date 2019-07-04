@@ -79,11 +79,16 @@ class CustomRequest(Request):
         return self.__client_ip
 
 
-def create_app(override_settings=None, app_class=MainApp, middlewares=(session_middlewares, cors_middlewares)):
+def create_app(
+        override_settings=None,
+        app_class=MainApp,
+        middlewares=(session_middlewares, cors_middlewares),
+        request_class=CustomRequest
+):
     if override_settings:
         # If override_settings is present, then it is a callable which will override the default settings
         override_settings(settings)
-    app = app_class(__name__, request_class=CustomRequest)
+    app = app_class(__name__, request_class=request_class)
     app.config.SECRET_KEY = settings.SECRET_KEY
     auth.setup(app=app)
     for middleware in middlewares:

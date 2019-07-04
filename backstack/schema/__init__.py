@@ -1,3 +1,4 @@
+import math
 from marshmallow import Schema, post_load
 from . import fields
 
@@ -48,7 +49,7 @@ class SystemSchema(Schema):
             "pagination": {
                 "number": data["number"],
                 "size": data["size"],
-                "total_pages": int(data["count"] / data["size"]),
+                "total_pages": math.ceil(data["count"] / data["size"]),
                 "total_count": data["count"]
             },
             "data": data["items"],

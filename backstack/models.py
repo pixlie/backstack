@@ -82,6 +82,7 @@ class BaseModel(SystemModel):
     __abstract__ = True
 
     created_at = Column(DateTime, nullable=False, server_default=text("(now() at time zone 'utc')"))
+    # modified_at = Column(DateTime, nullable=True)
     created_from = Column(INET, nullable=False)
 
     @declared_attr
