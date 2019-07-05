@@ -72,7 +72,7 @@ def login_required(func):
                 raise Unauthenticated()
         elif isinstance(controller_obj, CustomRequest):
             if controller_obj.is_authenticated:
-                return func(*args, **kwargs)
+                return func(controller_obj, *args, **kwargs)
             else:
                 raise Unauthenticated()
 
