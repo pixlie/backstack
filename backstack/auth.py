@@ -2,8 +2,6 @@ import importlib
 from functools import partial, wraps
 from sanic_auth import Auth
 
-from .controllers import BaseController
-from .app import CustomRequest
 from .singleton import Singleton
 from .config import settings
 from .errors import Unauthenticated, Unauthorized
@@ -59,6 +57,9 @@ def get_request_from_controller_or_function_view(controller_or_request):
     :param controller_or_request: class based view object or request
     :return: request
     """
+    from .controllers import BaseController
+    from .app import CustomRequest
+
     request = None
     if isinstance(controller_or_request, BaseController):
         # If we wrap a method of any inheritor of BaseController, we need the request property of our first param
