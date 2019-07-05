@@ -2,6 +2,8 @@ import importlib
 from functools import partial, wraps
 from sanic_auth import Auth
 
+from .controllers import BaseController
+from .app import CustomRequest
 from .singleton import Singleton
 from .config import settings
 from .errors import Unauthenticated, Unauthorized
@@ -50,6 +52,25 @@ class CustomAuth(Auth, metaclass=Singleton):
 auth = CustomAuth()
 
 
+def get_request_from_controller_or_function_view(controller_or_request):
+    """
+    Any of our _required functions can be used to decorate either a class based view method or a regular function view.
+    We determine what kind of view we are dealing with and extract the request accordingly.
+    :param controller_or_request: class based view object or request
+    :return: request
+    """
+    request = None
+    if isinstance(controller_or_request, BaseController):
+        # If we wrap a method of any inheritor of BaseController, we need the request property of our first param
+        request = controller_or_request.request
+    elif isinstance(controller_or_request, CustomRequest):
+        # If we wrap a regular request handler function then our first param is the request object
+        request = controller_or_request
+    if request is None:
+        raise Unauthenticated()
+    return request
+
+
 def login_required(func):
     """
     This is a decorator that can be applied to a Controller method that needs a logged in user.
@@ -59,22 +80,13 @@ def login_required(func):
     :param func: The is the function being decorated.
     :return: Either the method that is decorated (if user is logged in) else `unauthenticated` response (HTTP 401).
     """
-    def inner(controller_obj, *args, **kwargs):
-        # If we wrap a method of any inherited class of BaseController, then we need this class to test
-        from .controllers import BaseController
-        # If we wrap a regular function then we need this class to test
-        from .app import CustomRequest
+    def inner(controller_or_request, *args, **kwargs):
+        request = get_request_from_controller_or_function_view(controller_or_request)
 
-        if isinstance(controller_obj, BaseController):
-            if controller_obj.request.is_authenticated:
-                return func(controller_obj, *args, **kwargs)
-            else:
-                raise Unauthenticated()
-        elif isinstance(controller_obj, CustomRequest):
-            if controller_obj.is_authenticated:
-                return func(controller_obj, *args, **kwargs)
-            else:
-                raise Unauthenticated()
+        if request.is_authenticated:
+            return func(controller_or_request, *args, **kwargs)
+        else:
+            raise Unauthenticated()
 
     inner.__decorated__ = "login_required"
     return inner
@@ -103,15 +115,17 @@ def owner_required(func=None, field_to_check=None):
         return partial(owner_required, field_to_check=field_to_check)
 
     @wraps(func)
-    def inner(controller_obj, *args, **kwargs):
+    def inner(controller_or_request, *args, **kwargs):
         if field_to_check is not None:
-            owner_id = getattr(controller_obj.get_item(), field_to_check)
+            owner_id = getattr(controller_or_request.get_item(), field_to_check)
         else:
-            owner_id = controller_obj.get_item().created_by_id
+            owner_id = controller_or_request.get_item().created_by_id
 
-        if controller_obj.request.is_authenticated:
-            if owner_id == controller_obj.request.user.id:
-                return func(controller_obj, *args, **kwargs)
+        request = get_request_from_controller_or_function_view(controller_or_request)
+
+        if request.is_authenticated:
+            if owner_id == request.user.id:
+                return func(controller_or_request, *args, **kwargs)
             else:
                 raise Unauthorized()
         else:
@@ -141,10 +155,14 @@ def admin_required(func):
         the return is a `unauthorized` response (HTTP 403).
     """
 
-    def inner(controller_obj, *args, **kwargs):
-        if controller_obj.request.is_authenticated:
-            if controller_obj.request.user.is_admin:
-                return func(controller_obj, *args, **kwargs)
+    def inner(controller_or_request, *args, **kwargs):
+        request = get_request_from_controller_or_function_view(controller_or_request)
+
+        if request is None:
+            return Unauthenticated()
+        if request.is_authenticated:
+            if request.user.is_admin:
+                return func(controller_or_request, *args, **kwargs)
             else:
                 raise Unauthorized()
         else:
@@ -179,15 +197,17 @@ def owner_or_admin_required(func=None, field_to_check=None):
         return partial(owner_or_admin_required, field_to_check=field_to_check)
 
     @wraps(func)
-    def inner(controller_obj, *args, **kwargs):
+    def inner(controller_or_request, *args, **kwargs):
         if field_to_check is not None:
-            owner_id = getattr(controller_obj.get_item(), field_to_check)
+            owner_id = getattr(controller_or_request.get_item(), field_to_check)
         else:
-            owner_id = controller_obj.get_item().created_by_id
+            owner_id = controller_or_request.get_item().created_by_id
 
-        if controller_obj.request.is_authenticated:
-            if owner_id == controller_obj.request.user.id or controller_obj.request.user.is_admin:
-                return func(controller_obj, *args, **kwargs)
+        request = get_request_from_controller_or_function_view(controller_or_request)
+
+        if request.is_authenticated:
+            if owner_id == request.user.id or request.user.is_admin:
+                return func(controller_or_request, *args, **kwargs)
             else:
                 raise Unauthorized()
         else:
@@ -198,9 +218,9 @@ def owner_or_admin_required(func=None, field_to_check=None):
 
 
 def permission_check_required(func):
-    def inner(controller_obj, *args, **kwargs):
-        if controller_obj.permission_check():
-            return func(controller_obj, *args, **kwargs)
+    def inner(controller_or_request, *args, **kwargs):
+        if controller_or_request.permission_check():
+            return func(controller_or_request, *args, **kwargs)
         else:
             raise Unauthorized()
 
