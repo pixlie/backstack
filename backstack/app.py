@@ -75,7 +75,7 @@ class CustomRequest(Request):
         if self.__client_ip is None:
             from sanic_ipware import get_client_ip
             ip, _ = get_client_ip(self)
-            if (ip is None):
+            if ip is None:
                 ip = "127.0.0.1";
             self.__client_ip = ip
         return self.__client_ip
