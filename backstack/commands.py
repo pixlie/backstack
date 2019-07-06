@@ -10,36 +10,25 @@ from .config import settings
 class Commands(object):
     __app = None
     __args = None
+    __app_creator = None
     commands = [
-        "server", "drop_tables", "create_tables", "load_fixtures", "load_fakes", "run_workers", "shell", "migrations"
+        "server", "load_fixtures", "load_fakes", "run_workers", "shell", "migrations"
     ]
 
-    def __init__(self, app=None):
-        if app is not None:
-            self.__app = app
+    def __init__(self, app_creator=None):
+        if app_creator is not None:
+            self.__app_creator = app_creator
 
     @property
     def app(self):
-        from .app import create_app
-        if self.__app is None:
+        if self.__app is not None:
+            return self.__app
+        if self.__app_creator is not None:
+            self.__app = self.__app_creator()
+        else:
+            from .app import create_app
             self.__app = create_app()
         return self.__app
-
-    def create_tables(self):
-        self.app.load_models()
-        Base.metadata.create_all(db.engine)
-
-    @staticmethod
-    def drop_tables():
-        answer = input("Are you sure you want to run this command. It will "
-                       "drop all tables in the database(y/n):")
-
-        if answer == 'y':
-            md = Base.metadata
-            md.reflect(bind=db.engine)
-            md.drop_all(bind=db.engine)
-
-        print("Tables have been droppped successfully")
 
     @staticmethod
     def load_fixtures():

@@ -4,7 +4,7 @@ from sqlalchemy.orm.exc import NoResultFound
 from marshmallow.exceptions import ValidationError
 
 from .db import db
-from .errors import NotFound, ServerError, Errors
+from .errors import NotFound, ServerError, Errors, UniqueConstraintError
 from .helpers.cors import handle_cors
 
 
@@ -201,6 +201,7 @@ class CreateMixin(ModelMixin):
     save_creator = True
     related_fields_to_create = None
     request = None
+    ignore_unique_constraint_errors = []
 
     def get_insert_defaults(self):
         return {}
@@ -251,7 +252,11 @@ class CreateMixin(ModelMixin):
             self.create_related()
 
         try:
-            instance.save(commit=False)
+            try:
+                instance.save(commit=False)
+            except UniqueConstraintError as e:
+                if e.field in self.ignore_unique_constraint_errors:
+                    pass
             if hasattr(self, "pre_create_commit"):
                 db.session.flush()
                 self.pre_create_commit()
