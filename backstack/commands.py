@@ -19,15 +19,18 @@ class Commands(object):
         if app_creator is not None:
             self.__app_creator = app_creator
 
-    @property
-    def app(self):
-        if self.__app is not None:
-            return self.__app
+    def init_app(self):
         if self.__app_creator is not None:
             self.__app = self.__app_creator()
         else:
             from .app import create_app
             self.__app = create_app()
+
+    @property
+    def app(self):
+        if self.__app is not None:
+            return self.__app
+        self.init_app()
         return self.__app
 
     @staticmethod
@@ -107,6 +110,7 @@ class Commands(object):
 
         # Search for workers.setup_workers in all apps
         all_workers = []
+        self.init_app()
         for app in settings.APPS:
             try:
                 workers = importlib.import_module("apps.%s.workers" % app)
