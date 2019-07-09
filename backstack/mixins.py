@@ -1,4 +1,5 @@
 from sanic import response
+from psycopg2 import DataError
 from sqlalchemy.exc import IntegrityError, StatementError, DataError, ProgrammingError
 from sqlalchemy.orm.exc import NoResultFound
 from marshmallow.exceptions import ValidationError
@@ -165,13 +166,23 @@ class ListMixin(QueryFilter, ModelMixin):
         except (ValueError, TypeError):
             size = 100
 
-        paged_data = dict(
-            number=number,
-            size=size,
-            count=self.get_queryset().count(),
-            items=self.get_list(),
-            schema=self.get_serializer()
-        )
+        try:
+            paged_data = dict(
+                number=number,
+                size=size,
+                count=self.get_queryset().count(),
+                items=self.get_list(),
+                schema=self.get_serializer()
+            )
+        except DataError:
+            db.session.rollback()  # In case we had errors in fetching the data from DB
+            paged_data = dict(
+                number=number,
+                size=size,
+                count=0,
+                items=[],
+                schema=self.get_serializer()
+            )
         return response.json(
             self.get_serializer().paginated_dump(paged_data).data
         )
