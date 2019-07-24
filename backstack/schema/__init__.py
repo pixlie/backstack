@@ -12,11 +12,16 @@ class PaginationSchema(Schema):
 
 class SystemSchema(Schema):
     __instance__ = None
+    __only__ = None
+    __exclude__ = ()
 
     id = fields.Integer(dump_only=True)
 
     def __init__(self, *args, **kwargs):
         self.__instance__ = kwargs.pop("instance", None)
+        self.__only__ = kwargs.get("only", None)
+        self.__exclude__ = kwargs.get("exclude", ())
+
         super().__init__(*args, **kwargs)
 
         for k, v in self.fields.items():
@@ -43,7 +48,7 @@ class SystemSchema(Schema):
     def paginated_dump(self, data):
         class_paginated_schema = type("PaginatedSchema", (Schema, ),  {
             "pagination": fields.Nested(PaginationSchema),
-            "data": fields.Nested(data["schema"].__class__, many=True)
+            "data": fields.Nested(data["schema"].__class__, many=True, only=self.__only__, exclude=self.__exclude__)
         })
         return class_paginated_schema().dump({
             "pagination": {
