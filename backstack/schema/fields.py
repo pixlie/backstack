@@ -90,6 +90,8 @@ class Enum(Defaults, fields.Field):
         super().__init__(*args, **kwargs)
 
     def _serialize(self, value, attr, obj):
+        if value is None:
+            return None
         try:
             return value.value
         except ValueError:
