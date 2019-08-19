@@ -27,6 +27,12 @@ class MainApp(Sanic, metaclass=Singleton):
         uri = "%s%s" % (prepend, args[1])
         super().add_route(args[0], uri, **kwargs)
 
+    def add_websocket_route(self, *args, **kwargs):
+        # Prepend /api to all API URLs by default
+        prepend = kwargs.pop("prepend", "/api")
+        uri = "%s%s" % (prepend, args[1])
+        super().add_websocket_route(args[0], uri, **kwargs)
+
     @staticmethod
     def load_models():
         models = []

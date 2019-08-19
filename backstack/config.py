@@ -39,22 +39,11 @@ class Settings(metaclass=Singleton):
         self.WEBSITE_PROTOCOL = config("WEBSITE_PROTOCOL", cast=str, default="http")
         self.WEBSITE_DOMAIN = config("WEBSITE_DOMAIN", cast=str, default="localhost:3000")
 
-        self.MANDRILL_API_KEY = config("MANDRILL_API_KEY", cast=str, default=None)
-        self.DEFAULT_FROM_EMAIL = config("DEFAULT_FROM_EMAIL", cast=str, default=None)
-        self.DEFAULT_FROM_NAME = config("DEFAULT_FROM_NAME", cast=str, default=None)
-        self.DEFAULT_SUBJECT_PREFIX = config("DEFAULT_SUBJECT_PREFIX", cast=str, default=None)
-
         self.SECRET_KEY = config("SECRET_KEY", cast=str)
 
         self.RABBITMQ_HOST = config("RABBITMQ_HOST", cast=str, default="localhost")
         self.RABBITMQ_PORT = config("RABBITMQ_PORT", cast=int, default=5672)
         self.RABBITMQ_EXCHANGE = config("RABBITMQ_EXCHANGE", cast=str, default="mq-exchange")
-
-        self.FACEBOOK_CONSUMER_KEY = config("FACEBOOK_CONSUMER_KEY", cast=str, default=None)
-        self.FACEBOOK_CONSUMER_SECRET = config("FACEBOOK_CONSUMER_SECRET", cast=str, default=None)
-
-        self.GOOGLE_CONSUMER_KEY = config("GOOGLE_CONSUMER_KEY", cast=str, default=None)
-        self.GOOGLE_CONSUMER_SECRET = config("GOOGLE_CONSUMER_SECRET", cast=str, default=None)
 
         self.MEMCACHED_HOST = config("MEMCACHED_HOST", cast=str, default="localhost")
 

@@ -1,6 +1,7 @@
 import ujson as json
 import uuid
 from pymemcache.client.base import Client
+from pymemcache.exceptions import MemcacheUnexpectedCloseError
 
 from .config import settings
 from .singleton import Singleton
@@ -49,7 +50,10 @@ class MemcacheSession(object, metaclass=Singleton):
         return self.__session_client__
 
     def load(self):
-        data = self.session_store().get("sess/%s" % self.__session_key__)
+        try:
+            data = self.session_store().get("sess/%s" % self.__session_key__)
+        except MemcacheUnexpectedCloseError:
+            data = None
         if data is None:
             self.__session_data__ = {}
             self.__original_data__ = {}
