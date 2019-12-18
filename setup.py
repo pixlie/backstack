@@ -27,7 +27,7 @@ setup(
         "python-decouple",
         "sqlalchemy",
         "sqlalchemy-migrate",
-        "marshmallow",
+        "marshmallow==2.18.0",
         "passlib",
         "aioamqp",
         "ujson",

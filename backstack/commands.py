@@ -33,11 +33,14 @@ class Commands(object):
         self.init_app()
         return self.__app
 
-    @staticmethod
-    def load_fixtures():
+    def load_fixtures(self):
+        print("load fixtures")
+        self.init_app()
         for app in settings.APPS:
+            print(app)
             try:
                 fixtures = importlib.import_module("apps.%s.fixtures" % app)
+                print("Found fixtures for app {}, running them".format(app))
                 if hasattr(fixtures, "generate"):
                     gen = fixtures.generate()
                     if isinstance(gen, dict):
@@ -46,7 +49,7 @@ class Commands(object):
                             model_data = model(**data)
                             model_data.save()
             except ImportError:
-                pass
+                print("App {} does not have fixtures".format(app))
 
     @staticmethod
     def load_fakes():
