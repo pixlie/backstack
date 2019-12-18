@@ -184,7 +184,7 @@ class ListMixin(QueryFilter, ModelMixin):
                 schema=self.get_serializer()
             )
         return response.json(
-            self.get_serializer().paginated_dump(paged_data).data
+            self.get_serializer().paginated_dump(paged_data)
         )
 
 
@@ -201,7 +201,7 @@ class ViewMixin(QueryFilter, ModelMixin):
     def handle_get(self, *args, **kwargs):
         try:
             return response.json(
-                self.get_serializer().dump(self.get_item()).data
+                self.get_serializer().dump(self.get_item())
             )
         except NoResultFound:
             raise NotFound()

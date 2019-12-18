@@ -45,13 +45,13 @@ class Boolean(Defaults, fields.Boolean):
         super().__init__(*args, **kwargs)
         self.default_error_messages["invalid"] = "Not a valid boolean."
 
-
-class FormattedString(Defaults, fields.FormattedString):
-    __classname__ = "string"
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.default_error_messages["format"] = "Cannot format string with given data."
+#
+# class FormattedString(Defaults, fields.FormattedString):
+#     __classname__ = "string"
+#
+#     def __init__(self, *args, **kwargs):
+#         super().__init__(*args, **kwargs)
+#         self.default_error_messages["format"] = "Cannot format string with given data."
 
 
 class DateTime(Defaults, fields.DateTime):
